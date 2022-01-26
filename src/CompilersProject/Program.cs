@@ -9,7 +9,12 @@ namespace CompilersProject
         {
             MiniPLFileNameInput miniPLInput = new MiniPLFileNameInput();
 
-            Interpreter interpreter = new Interpreter(miniPLInput);
+            string[] program = miniPLInput.readMiniPLProgram();
+
+            SimpleCommentRemover simpleCommentRemover = new SimpleCommentRemover();
+
+            Interpreter interpreter = new Interpreter(program, simpleCommentRemover);
+
             interpreter.interpret();
         }
     }
