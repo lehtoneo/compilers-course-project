@@ -36,6 +36,7 @@ namespace CompilersProject.Implementations
             return smallCommentsRemoved.ToArray();
         }
 
+
         public string[] removeBigComments(string[] miniPlProgram)
         {
             List<string> bigCommentsRemoved = new List<string>();
@@ -50,9 +51,11 @@ namespace CompilersProject.Implementations
 
             while (true)
             {
-                int[] commentIndexes = getFirstBigCommentIndexes(bigCommentsRemoved);
+                int startIndex = 0;
+                int[] commentIndexes = getFirstBigCommentIndexes(startIndex, bigCommentsRemoved);
                 int commentStartIndex = commentIndexes[0];
                 int commentEndIndex = commentIndexes[1];
+                startIndex = commentEndIndex;
                 if (commentEndIndex == -1 || commentStartIndex == -1)
                 {
                     break;
@@ -106,15 +109,16 @@ namespace CompilersProject.Implementations
         }
 
         // todo: check the comment syntax? e.g comment needs to start before it ends
-        public int[] getFirstBigCommentIndexes(List<string> lines)
+        public int[] getFirstBigCommentIndexes(int startIndex, List<string> lines)
         {
             int[] result = new int[2];
 
             result[0] = -1;
             result[1] = -1;
-            int i = 0;
-            foreach (string line in lines)
+            int i = startIndex;
+            while (i < lines.Count)
             {
+                string line = lines[i];
                 int indexOfCommentStartInline = line.IndexOf("/*");
                 int indexOfCommentEndInLine = line.IndexOf("*/");
                 if (indexOfCommentStartInline != -1 && result[0] == -1)

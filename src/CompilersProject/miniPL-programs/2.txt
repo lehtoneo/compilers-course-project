@@ -11,4 +11,4 @@ print " : Hello, World!\n";
 end for;
 assert (x = nTimes);
 /*cant see
-/* this should be visible
+*/ this should be visible
