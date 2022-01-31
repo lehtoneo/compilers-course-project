@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using CompilersProject.Implementations;
 
 namespace CompilersProject.Interfaces
 {
-    public interface IInput
+    public interface IScanner
     {
-        public string[] readMiniPLProgram();
+        public List<Token> scan(string[] program);
     }
 }

@@ -1,22 +1,23 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using CompilersProject.Interfaces;
+using CompilersProject.Exceptions;
+using System.Collections.Generic;
+
 namespace CompilersProject.Implementations
 {
     public class Interpreter : IInterpreter
     {
         public string[] MiniPlProgram { get; set; }
-        private ICommentRemover CommentRemover;
+        private IScanner Scanner;
 
         
 
-        public Interpreter(ICommentRemover commentRemover)
+        public Interpreter(IScanner commentRemover)
         {
-            this.CommentRemover = commentRemover;
+            this.Scanner = commentRemover;
         }
 
-        public Interpreter(string[] miniPLProgram, ICommentRemover commentRemover) : this(commentRemover)
+        public Interpreter(string[] miniPLProgram, IScanner scanner) : this(scanner)
         {
             this.MiniPlProgram = miniPLProgram;
         }
@@ -26,12 +27,11 @@ namespace CompilersProject.Implementations
         {
             try
             {
-                string[] commentsRemoved = CommentRemover.removeComments(miniPlProgram);
-                Console.WriteLine("");
-                Console.WriteLine("Comments removed:");
-                foreach (string line in commentsRemoved)
+                List<Token> tokens = Scanner.scan(miniPlProgram);
+                Console.WriteLine("Tokens:");
+                foreach (Token t in tokens)
                 {
-                    Console.WriteLine(line);
+                    Console.WriteLine(t.value);
                 }
             } catch (MiniPLException e)
             {

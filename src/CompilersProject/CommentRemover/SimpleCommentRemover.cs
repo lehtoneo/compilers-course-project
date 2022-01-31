@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using CompilersProject.Exceptions;
 using CompilersProject.Interfaces;
-
 namespace CompilersProject.Implementations
 {
     public class SimpleCommentRemover : ICommentRemover

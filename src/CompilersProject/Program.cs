@@ -1,5 +1,4 @@
-﻿using System;
-using CompilersProject.Implementations;
+﻿using CompilersProject.Implementations;
 
 namespace CompilersProject
 {
@@ -13,7 +12,8 @@ namespace CompilersProject
 
             SimpleCommentRemover simpleCommentRemover = new SimpleCommentRemover();
 
-            Interpreter interpreter = new Interpreter(program, simpleCommentRemover);
+            MiniPLScanner scanner = new MiniPLScanner(simpleCommentRemover);
+            Interpreter interpreter = new Interpreter(program, scanner);
 
             interpreter.interpret();
         }
