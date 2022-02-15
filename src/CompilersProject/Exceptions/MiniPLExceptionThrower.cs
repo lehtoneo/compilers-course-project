@@ -7,7 +7,7 @@ namespace CompilersProject.Exceptions
     public class MiniPLExceptionThrower
     {
 
-        void throwMiniPLExepction(string error)
+        public void throwMiniPLExepction(string error)
         {
             throw new MiniPLException(error);
         }
@@ -17,5 +17,12 @@ namespace CompilersProject.Exceptions
             string error = $"UnExpected symbol '{symbol}' at line {line}";
             throwMiniPLExepction(error);
         }
+
+        public void throwUnExpectedValueError(int line, string value, string expected)
+        {
+            string error = $"UnExpected value '{value}' at line {line} expected '{expected}'";
+            throwMiniPLExepction(error);
+        }
+
     }
 }

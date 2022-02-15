@@ -9,15 +9,16 @@ namespace CompilersProject.Implementations
     {
         public string[] MiniPlProgram { get; set; }
         private IScanner Scanner;
-
+        private IParser Parser;
         
 
-        public Interpreter(IScanner commentRemover)
+        public Interpreter(IScanner scanner, IParser parser)
         {
-            this.Scanner = commentRemover;
+            this.Scanner = scanner;
+            this.Parser = parser;
         }
 
-        public Interpreter(string[] miniPLProgram, IScanner scanner) : this(scanner)
+        public Interpreter(string[] miniPLProgram, IScanner scanner, IParser parser) : this(scanner, parser)
         {
             this.MiniPlProgram = miniPLProgram;
         }
@@ -28,11 +29,8 @@ namespace CompilersProject.Implementations
             try
             {
                 List<Token> tokens = Scanner.scan(miniPlProgram);
-                Console.WriteLine("Tokens:");
-                foreach (Token t in tokens)
-                {
-                    Console.WriteLine(t.value);
-                }
+                Parser.parse(tokens);
+
             } catch (MiniPLException e)
             {
                 Console.WriteLine("There was an error interpreting the minipl program");
