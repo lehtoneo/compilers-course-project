@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using CompilersProject.Utils;
 using CompilersProject.Interfaces;
 using CompilersProject.Abstracts;
 using CompilersProject.Exceptions;
@@ -9,23 +10,11 @@ namespace CompilersProject.Implementations
 {
     public class MiniPLScanner : AScanner
     {
-        public Dictionary<char, bool> operatorDict;
-        public Dictionary<char, bool> reservedSymbolDict;
+        public MiniPLHelper miniPLHelper;
         public MiniPLExceptionThrower miniPLExceptionThrower;
         public MiniPLScanner(ICommentRemover commentRemover) : base(commentRemover) {
-            this.miniPLExceptionThrower = new MiniPLExceptionThrower();
-            char[] miniPLOperators = new[] { '+', '-', '*', '/', '<', '=', '&', '!' };
-            char[] otherReservedSymbols = new[] { ';', ':', '(', ')' };
-            this.reservedSymbolDict = new Dictionary<char, bool>();
-            
-            foreach (char c in miniPLOperators)
-            {
-                this.reservedSymbolDict.Add(c, true);
-            }
-            foreach (char c in otherReservedSymbols)
-            {
-                this.reservedSymbolDict.Add(c, true);
-            }
+            this.miniPLExceptionThrower = new MiniPLExceptionThrower("Scanner");
+            this.miniPLHelper = new MiniPLHelper();
         }
 
         public override List<Token> scan(string[] program)
@@ -33,10 +22,11 @@ namespace CompilersProject.Implementations
             string[] commentsRemoved = this.commentRemover.removeComments(program);
             
             List<Token> tokenList = new List<Token>();
-            int lineI = 0;
+            int lineI = -1;
             bool inString = false;
             foreach (string line in commentsRemoved)
             {
+                lineI++;
                 string token = "";
                 int colI = -1;
                 
@@ -55,7 +45,7 @@ namespace CompilersProject.Implementations
                         token = token + c;
                         if (c == '"')
                         {
-                            tokenList.Add(new Token(token, lineI, colI));
+                            tokenList.Add(new Token(token, lineI, colI, "identifier"));
                             token = "";
                             inString = false;
                         }
@@ -72,7 +62,7 @@ namespace CompilersProject.Implementations
                     {
                         if (token != "")
                         {
-                            tokenList.Add(new Token(token, lineI, colI));
+                            tokenList.Add(new Token(token, lineI, colI, "identifier"));
                             token = "";
                         }
                         continue;
@@ -88,10 +78,10 @@ namespace CompilersProject.Implementations
                             {
                                if (token != "")
                                 {
-                                    tokenList.Add(new Token(token, lineI, colI - token.Length));
+                                    tokenList.Add(new Token(token, lineI, colI - token.Length, "identifier"));
                                     token = "";
                                 }
-                                tokenList.Add(new Token("..", lineI, colI));
+                                tokenList.Add(new Token("..", lineI, colI, "symbol"));
                                 colI = colI + 1;
                                 continue;
                             } else
@@ -104,11 +94,11 @@ namespace CompilersProject.Implementations
                         }
                     }
 
-                    if (isReservedSymbol(c))
+                    if (miniPLHelper.isSymbol(c))
                     {
                         if (token != "")
                         {
-                            tokenList.Add(new Token(token, lineI, colI));
+                            tokenList.Add(new Token(token, lineI, colI, "identifier"));
                             token = "";
                         }
                         if (c == ':')
@@ -117,14 +107,14 @@ namespace CompilersProject.Implementations
                             {
                                 if (line[colI + 1] == '=')
                                 {
-                                    tokenList.Add(new Token(":=", lineI, colI));
+                                    tokenList.Add(new Token(":=", lineI, colI, "symbol"));
                                     colI++;
                                     continue;
                                 }
                             }
                         }
 
-                        tokenList.Add(new Token(c, lineI, colI));
+                        tokenList.Add(new Token(c, lineI, colI, "symbol"));
                     } else
                     {
                         token = token + c;
@@ -132,18 +122,26 @@ namespace CompilersProject.Implementations
                 }
                 if (token != "")
                 {
-                    tokenList.Add(new Token(token, lineI, colI - token.Length));
+                    tokenList.Add(new Token(token, lineI, colI - token.Length, "identifier"));
                     token = "";
                 }
                 lineI++;
+            }
+            int i = 0;
+            while (i < tokenList.Count)
+            {
+                Token t = tokenList[i];
+                if (miniPLHelper.isReservedKeyword(t.value))
+                {
+                    Token newToken = new Token(t.value, t.line, t.column, "keyword");
+                    tokenList[i] = newToken;
+                }
+                i++;
             }
 
 
             return tokenList;
         }
-        public bool isReservedSymbol(char c)
-        {
-            return this.reservedSymbolDict.GetValueOrDefault(c, false);
-        }
+        
     }
 }

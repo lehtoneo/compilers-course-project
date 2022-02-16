@@ -9,7 +9,7 @@ namespace CompilersProject.Implementations
         MiniPLExceptionThrower miniPLExceptionThrower;
         public SimpleCommentRemover()
         {
-            this.miniPLExceptionThrower = new MiniPLExceptionThrower();
+            this.miniPLExceptionThrower = new MiniPLExceptionThrower("CommentRemover");
         }
         public string[] removeComments(string[] miniPlProgram)
         {

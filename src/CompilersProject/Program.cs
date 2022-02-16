@@ -14,7 +14,7 @@ namespace CompilersProject
             SimpleCommentRemover simpleCommentRemover = new SimpleCommentRemover();
 
             MiniPLScanner scanner = new MiniPLScanner(simpleCommentRemover);
-            Parser parser = new Parser();
+            MiniPLParser parser = new MiniPLParser();
             Interpreter interpreter = new Interpreter(program, scanner, parser);
 
             interpreter.interpret();

@@ -6,6 +6,6 @@ namespace CompilersProject.Interfaces
 {
     public interface IParser
     {
-        public void parse(List<Token> tokens);
+        public Node<String> parse(List<Token> tokens);
     }
 }

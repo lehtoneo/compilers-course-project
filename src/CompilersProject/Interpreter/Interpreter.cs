@@ -23,13 +23,30 @@ namespace CompilersProject.Implementations
             this.MiniPlProgram = miniPLProgram;
         }
 
-        
+        public void printNode(Node<string> node)
+        {
+            Console.WriteLine(node.value);
+            if (node.children.Count > 0)
+            {
+                foreach (Node<string> n in node.children)
+                {
+                    printNode(n);
+                }
+            }
+        }
         public void interpret(string[] miniPlProgram)
         {
             try
             {
                 List<Token> tokens = Scanner.scan(miniPlProgram);
-                Parser.parse(tokens);
+                Console.WriteLine("Tokens:");
+                foreach(Token t in tokens)
+                {
+                    Console.WriteLine(t.value);
+                }
+                Node<String> n = Parser.parse(tokens);
+                printNode(n);
+
 
             } catch (MiniPLException e)
             {
