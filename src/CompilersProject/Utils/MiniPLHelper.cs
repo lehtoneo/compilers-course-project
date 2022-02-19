@@ -85,6 +85,11 @@ namespace CompilersProject.Utils
             return s == "true" || s == "false";
         }
 
+
+        public bool isInt(string s)
+        {
+            return int.TryParse(s, out _);
+        }
         public bool checkTokenThrowsMiniPLError(Token t, string expectedValue)
         {
             if (t.value != expectedValue)
@@ -93,6 +98,55 @@ namespace CompilersProject.Utils
                     .throwUnExpectedValueError(t.row, t.value, expectedValue);
             }
             return true;
+        }
+
+        public bool isValidType(string value)
+        {
+            List<string> validTypes = new List<string> { "int", "string", "bool" };
+
+            return validTypes.Contains(value);
+        }
+
+        public bool isValidType(Token t) { return isValidType(t.value); }
+
+
+
+        public bool isValidOperatorForType(string op, string type)
+        {
+            if (!isValidType(type))
+            {
+                throw new Exception("Is valid operator got invalid type");
+            }
+
+            List<string> validCommonOperands = new List<string> { "=", "<" };
+
+            if (validCommonOperands.Contains(op))
+            {
+                return true;
+            }
+
+            if (type == "string")
+            {
+                List<string> validStringOperands = new List<string> { "+" };
+                return validStringOperands.Contains(op);
+
+            }
+            else if (type == "int")
+            {
+                List<string> validIntOperands = new List<string> { "+", "-", "/", "*" };
+                return validIntOperands.Contains(op);
+
+            }
+            else if (type == "bool")
+            {
+                List<string> validBoolOperands = new List<string> { "&" };
+                return validBoolOperands.Contains(op);
+            }
+            else
+            {
+                // should never come here
+                return false;
+            }
         }
     }
 }

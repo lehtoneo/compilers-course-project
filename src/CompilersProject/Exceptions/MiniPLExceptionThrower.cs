@@ -17,7 +17,7 @@ namespace CompilersProject.Exceptions
             this.errorPlace = errorPlace;
         }
 
-        public void throwMiniPLExepction(string error)
+        public MiniPLException throwMiniPLExepction(string error)
         {
             string finalError = "";
             if (this.errorPlace != null)
@@ -69,7 +69,25 @@ namespace CompilersProject.Exceptions
 
         public void throwUndefinedVariableError(int row, string variable)
         {
-            string error = $"Variable '{variable}' is undefined";
+            string error = $"Undefined variable at row {row} : Variable '{variable}' is undefined";
+            throwMiniPLExepction(error);
+        }
+
+        public void throwInvalidExpressionError(int row, string expectedType, string receivedType)
+        {
+            string error = $"Invalid expression at row {row} : expected type {expectedType}, received {receivedType}";
+            throwMiniPLExepction(error);
+        }
+
+        public void throwInvalidUsageOfOperatorError(int row, string op, string type)
+        {
+            string error = $"Invalid expression at row {row} : invalid operator '{op}' for type '{type}'";
+            throwMiniPLExepction(error);
+        }
+
+        public void throwInvalidOperatorError(int row, string op, string type)
+        {
+            string error = $"Invalid operator '{op}' for type {type} at row {row}: ";
             throwMiniPLExepction(error);
         }
 
