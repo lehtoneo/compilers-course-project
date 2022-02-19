@@ -12,24 +12,26 @@ namespace CompilersProject.Implementations
     {
         public MiniPLHelper miniPLHelper;
         public MiniPLExceptionThrower miniPLExceptionThrower;
-        public MiniPLScanner(ICommentRemover commentRemover) : base(commentRemover) {
+        public MiniPLScanner(ICommentRemover commentRemover) : base(commentRemover)
+        {
             this.miniPLExceptionThrower = new MiniPLExceptionThrower("Scanner");
-            this.miniPLHelper = new MiniPLHelper();
+            this.miniPLHelper = new MiniPLHelper(miniPLExceptionThrower);
         }
 
         public override List<Token> scan(string[] program)
         {
             string[] commentsRemoved = this.commentRemover.removeComments(program);
-            
+
             List<Token> tokenList = new List<Token>();
-            int lineI = -1;
+            int lineI = 0;
             bool inString = false;
             foreach (string line in commentsRemoved)
             {
+                Console.WriteLine(line);
                 lineI++;
                 string token = "";
                 int colI = -1;
-                
+
                 if (line == "")
                 {
                     continue;
@@ -58,7 +60,7 @@ namespace CompilersProject.Implementations
                         token = $"{h}";
                         continue;
                     }
-                    if (c == ' ')
+                    if (c == ' ' || c == '\t')
                     {
                         if (token != "")
                         {
@@ -70,13 +72,13 @@ namespace CompilersProject.Implementations
 
                     if (c == '.')
                     {
-                        
+
                         if (colI + 1 < line.Length)
                         {
                             char next = line[colI + 1];
                             if (next == '.')
                             {
-                               if (token != "")
+                                if (token != "")
                                 {
                                     tokenList.Add(new Token(token, lineI, colI - token.Length, "identifier"));
                                     token = "";
@@ -84,11 +86,13 @@ namespace CompilersProject.Implementations
                                 tokenList.Add(new Token("..", lineI, colI, "symbol"));
                                 colI = colI + 1;
                                 continue;
-                            } else
+                            }
+                            else
                             {
                                 miniPLExceptionThrower.throwUnExpectedSymbolError(lineI, '.');
                             }
-                        } else
+                        }
+                        else
                         {
                             miniPLExceptionThrower.throwUnExpectedSymbolError(lineI, '.');
                         }
@@ -115,7 +119,8 @@ namespace CompilersProject.Implementations
                         }
 
                         tokenList.Add(new Token(c, lineI, colI, "symbol"));
-                    } else
+                    }
+                    else
                     {
                         token = token + c;
                     }
@@ -123,9 +128,8 @@ namespace CompilersProject.Implementations
                 if (token != "")
                 {
                     tokenList.Add(new Token(token, lineI, colI - token.Length, "identifier"));
-                    token = "";
+
                 }
-                lineI++;
             }
             int i = 0;
             while (i < tokenList.Count)
@@ -133,7 +137,7 @@ namespace CompilersProject.Implementations
                 Token t = tokenList[i];
                 if (miniPLHelper.isReservedKeyword(t.value))
                 {
-                    Token newToken = new Token(t.value, t.line, t.column, "keyword");
+                    Token newToken = new Token(t.value, t.row, t.column, "keyword");
                     tokenList[i] = newToken;
                 }
                 i++;
@@ -142,6 +146,6 @@ namespace CompilersProject.Implementations
 
             return tokenList;
         }
-        
+
     }
 }

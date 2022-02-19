@@ -6,9 +6,9 @@ shouldnt be seen */ //should not be seen either
 read nTimes;
 var x : int; // cant see me
 for x in 0..nTimes-1 do
-print x;
-print " : Hello, World!\n";
+	for y in 0..nTimes-1 do
+		print x;
+		var y : int := 1;
+	end for;
 end for;
 assert (x = nTimes);
-/*cant see
-*/ this should be visible

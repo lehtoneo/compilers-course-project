@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-
+using CompilersProject.Exceptions;
+using CompilersProject.Implementations;
 namespace CompilersProject.Utils
 {
     public class MiniPLHelper
@@ -9,8 +10,11 @@ namespace CompilersProject.Utils
         public Dictionary<char, bool> operatorDict { get; set; }
         public Dictionary<char, bool> symbolDict { get; set; }
         public Dictionary<string, bool> reservedKeywords { get; set; }
-        public MiniPLHelper()
+        public MiniPLExceptionThrower miniPLExceptionThrower = new MiniPLExceptionThrower();
+        public MiniPLHelper(MiniPLExceptionThrower miniPLExceptionThrower)
         {
+            this.miniPLExceptionThrower = miniPLExceptionThrower;
+
             char[] miniPLOperators = new[] { '+', '-', '*', '/', '<', '=', '&', '!' };
             char[] otherSymbols = new[] { ';', ':', '(', ')' };
 
@@ -34,6 +38,7 @@ namespace CompilersProject.Utils
             }
 
         }
+
         public bool isSymbol(char c)
         {
             return this.symbolDict.GetValueOrDefault(c, false);
@@ -54,7 +59,8 @@ namespace CompilersProject.Utils
             if (s.Length != 1)
             {
                 return false;
-            } else
+            }
+            else
             {
                 return isOperator(s[0]);
             }
@@ -73,6 +79,20 @@ namespace CompilersProject.Utils
         public bool isString(string s)
         {
             return s[0] == '"' && s[s.Length - 1] == '"';
+        }
+        public bool isBoolean(string s)
+        {
+            return s == "true" || s == "false";
+        }
+
+        public bool checkTokenThrowsMiniPLError(Token t, string expectedValue)
+        {
+            if (t.value != expectedValue)
+            {
+                miniPLExceptionThrower
+                    .throwUnExpectedValueError(t.row, t.value, expectedValue);
+            }
+            return true;
         }
     }
 }

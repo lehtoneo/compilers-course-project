@@ -10,11 +10,19 @@ namespace CompilersProject.Implementations
     public class MiniPLParser : IParser
     {
         public List<Token> Tokens;
-        public Dictionary<string, bool> identifiers = new Dictionary<string, bool>();
-        public MiniPLExceptionThrower miniPLExceptionThrower = new MiniPLExceptionThrower("Parser");
-        public MiniPLHelper miniPLHelper = new MiniPLHelper();
+        public Dictionary<string, ParserIdentifier> identifiers = new Dictionary<string, ParserIdentifier>();
+        public MiniPLExceptionThrower miniPLExceptionThrower;
+        public MiniPLHelper miniPLHelper;
+        private int forLoopIndex = 0;
+        public MiniPLParser()
+        {
+            this.miniPLExceptionThrower = new MiniPLExceptionThrower("Parser");
+            this.miniPLHelper = new MiniPLHelper(miniPLExceptionThrower);
+        }
         public Node<String> parse(List<Token> tokens)
         {
+            this.identifiers = new Dictionary<string, ParserIdentifier>();
+            this.forLoopIndex = 0;
 
             this.Tokens = tokens;
 
@@ -36,34 +44,104 @@ namespace CompilersProject.Implementations
                 return;
             }
 
-            Node<String> node = new Node<String>("stmt_list");
-            root.children.Add(node);
+            Node<String> stmtListNode = new Node<String>("stmt_list");
+            root.children.Add(stmtListNode);
             List<Token> firstStatement = new List<Token>();
-            List<Token> restOfStatements = new List<Token>();
-            bool firstStatementCaptured = false;
-            foreach (Token t in tokens)
+            bool inLoop = false;
+            int innerLoopCount = 0;
+            int i = -1;
+            while (i < tokens.Count)
             {
-                string tokenValue = t.value;
 
-                if (tokenValue == ";" && !firstStatementCaptured)
+                i++;
+                Token t = tokens[i];
+                string tokenValue = t.value;
+                if (i == 0)
                 {
-                    firstStatementCaptured = true;
-                    continue;
+                    if (tokenValue == "for")
+                    {
+                        firstStatement.Add(t);
+                        inLoop = true;
+                        continue;
+                    }
                 }
-                if (!firstStatementCaptured)
+
+                if (inLoop)
                 {
-                    firstStatement.Add(t);
-                } else
+                    if (tokenValue == "end")
+                    {
+                        firstStatement.Add(t);
+
+                        i++;
+                        if (tokens.Count < i)
+                        {
+                            miniPLExceptionThrower
+                                .throwExpectedSomethingFoundNothingError(t.row, "for");
+                        }
+                        Token shouldBeFor = tokens[i];
+                        miniPLHelper.checkTokenThrowsMiniPLError(shouldBeFor, "for");
+
+                        i++;
+                        if (tokens.Count < i)
+                        {
+                            miniPLExceptionThrower
+                                .throwExpectedSomethingFoundNothingError(t.row, ";");
+                        }
+
+                        Token shouldBeEndOfLine = tokens[i];
+                        miniPLHelper.checkTokenThrowsMiniPLError(shouldBeEndOfLine, ";");
+
+                        firstStatement.Add(shouldBeFor);
+
+                        if (innerLoopCount == 0)
+                        {
+
+                            break;
+                        }
+                        else
+                        {
+                            firstStatement.Add(shouldBeEndOfLine);
+                            innerLoopCount--;
+                        }
+                    }
+                    else if (tokenValue == "for")
+                    {
+                        innerLoopCount++;
+                        firstStatement.Add(t);
+                    }
+                    else
+                    {
+                        firstStatement.Add(t);
+                    }
+
+                }
+                else
                 {
-                    restOfStatements.Add(t);
+                    if (tokenValue == ";")
+                    {
+                        i++;
+                        break;
+                    }
+                    else
+                    {
+                        firstStatement.Add(t);
+                    }
                 }
             }
-            stmt(node, firstStatement);
-            stmt_list(node, restOfStatements);
+            stmt(stmtListNode, firstStatement);
+            List<Token> restOfStatements = new List<Token>();
+            while (i < tokens.Count)
+            {
+                Token t = tokens[i];
+                restOfStatements.Add(t);
+                i++;
+            }
+
+            stmt_list(stmtListNode, restOfStatements);
         }
         public void stmt(Node<String> parent, List<Token> statement)
         {
-            
+
             Node<string> statementNode = new Node<string>("statement");
             parent.children.Add(statementNode);
             if (statement.Count == 0)
@@ -72,45 +150,185 @@ namespace CompilersProject.Implementations
                 return;
             }
             Token firstToken = statement[0];
-            
+
             if (firstToken.value == "var")
             {
                 var(statementNode, statement);
-            } else if (firstToken.value == "read")
+            }
+            else if (firstToken.value == "read")
             {
                 read(statementNode, statement);
-            } else if (firstToken.value == "print")
+            }
+            else if (firstToken.value == "print")
             {
                 print(statementNode, statement);
-            } else if (firstToken.value == "assert")
+            }
+            else if (firstToken.value == "assert")
             {
                 assert(statementNode, statement);
-            } else if (firstToken.value == "for")
+            }
+            else if (firstToken.value == "for")
             {
-                // todo
-            } else
+                forLoop(statementNode, statement);
+            }
+            else
             {
                 identAssignment(statementNode, statement);
             }
+        }
+
+        public void forLoop(Node<String> parent, List<Token> tokens)
+        {
+            forLoopIndex++;
+
+            Node<String> loopNode = parent;
+            Token first = tokens[0];
+            loopNode.children.Add(new Node<string>("forloop"));
+            if (tokens.Count < 2)
+            {
+                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.row, "identifier");
+            }
+            Token identifierToken = tokens[1];
+            this.identifierCheck(identifierToken);
+            loopNode.children.Add(new Node<string>(identifierToken.value));
+
+            if (tokens.Count < 3)
+            {
+                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.row, "in");
+            }
+            Token inToken = tokens[2];
+            if (inToken.value != "in")
+            {
+                miniPLExceptionThrower.throwUnExpectedValueError(
+                    first.row,
+                    inToken.value,
+                    "in"
+                );
+            }
+
+            loopNode.children.Add(new Node<string>("in"));
+
+            if (tokens.Count < 4)
+            {
+                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(
+                    first.row,
+                    "For loop expression"
+                );
+            }
+            int firstExpressionStartIndex = 3;
+            int i = firstExpressionStartIndex;
+            List<Token> firstExpressionTokens = new List<Token>();
+
+            while (i < tokens.Count)
+            {
+                Token t = tokens[i];
+                if (t.value == "..")
+                {
+                    expr(loopNode, firstExpressionTokens);
+                    loopNode.children.Add(new Node<string>(".."));
+                    i++;
+                    break;
+                }
+                else
+                {
+                    firstExpressionTokens.Add(t);
+                }
+                i++;
+            }
+            if (firstExpressionTokens.Count == 0)
+            {
+                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.row, "expression");
+            }
+
+            List<Token> secondExpressionTokens = new List<Token>();
+            while (i < tokens.Count)
+            {
+                Token t = tokens[i];
+
+                if (t.value == "do")
+                {
+                    break;
+                }
+                else
+                {
+                    secondExpressionTokens.Add(t);
+                }
+                i++;
+            }
+
+            expr(loopNode, secondExpressionTokens);
+            Token shouldBeDoToken = tokens[i];
+
+            miniPLHelper.checkTokenThrowsMiniPLError(shouldBeDoToken, "do");
+
+            loopNode.children.Add(new Node<string>("do"));
+
+            List<Token> statements = new List<Token>();
+            i++;
+            if (i >= tokens.Count)
+            {
+                miniPLExceptionThrower
+                    .throwExpectedSomethingFoundNothingError(first.row + 1, "statements");
+            }
+
+            while (i < tokens.Count - 2)
+            {
+                Token t = tokens[i];
+                statements.Add(t);
+                i++;
+            }
+
+            Token shouldBeEndToken = tokens[i];
+            miniPLHelper.checkTokenThrowsMiniPLError(shouldBeEndToken, "end");
+
+            stmt_list(loopNode, statements);
+
+
+            loopNode.children.Add(new Node<string>("end"));
+            i++;
+            if (i >= tokens.Count)
+            {
+                miniPLExceptionThrower
+                    .throwExpectedSomethingFoundNothingError(shouldBeEndToken.row, "for");
+            }
+
+            Token shouldBeForToken = tokens[i];
+            miniPLHelper.checkTokenThrowsMiniPLError(shouldBeForToken, "for");
+
+            loopNode.children.Add(new Node<string>("for"));
+            foreach (string key in identifiers.Keys)
+            {
+                ParserIdentifier pi = identifiers.GetValueOrDefault(key, new ParserIdentifier("undefined", -1));
+                if (pi.forLoopIndex == forLoopIndex)
+                {
+                    identifiers.Remove(key);
+                }
+            }
+            forLoopIndex--;
         }
 
         public void identAssignment(Node<String> parent, List<Token> tokens)
         {
             Token ident = tokens[0];
             string identifier = ident.value;
-            if (!identifiers.GetValueOrDefault(identifier, false))
+
+            if (identifiers.GetValueOrDefault(identifier, new ParserIdentifier("undefined", -1)).type == "undefined")
             {
-                miniPLExceptionThrower.throwUndefinedVariableError(ident.line, identifier);
+                miniPLExceptionThrower.throwUndefinedVariableError(ident.row, identifier);
             }
             parent.children.Add(new Node<string>(identifier));
             if (tokens.Count < 2)
             {
-                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(ident.line, ":=");
+                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(ident.row, ":=");
             }
             Token assignmentToken = tokens[1];
             if (assignmentToken.value != ":=")
             {
-                miniPLExceptionThrower.throwUnExpectedValueError(assignmentToken.line, assignmentToken.value, ":=");
+                miniPLExceptionThrower.throwUnExpectedValueError(
+                    assignmentToken.row,
+                    assignmentToken.value,
+                    ":="
+                );
             }
             parent.children.Add(new Node<string>(":="));
             List<Token> expressionTokens = new List<Token>();
@@ -131,12 +349,16 @@ namespace CompilersProject.Implementations
             Token first = tokens[0];
             if (tokens.Count < 2)
             {
-                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.line, "(");
+                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.row, "(");
             }
             Token leftParenthesis = tokens[1];
             if (leftParenthesis.value != "(")
             {
-                miniPLExceptionThrower.throwUnExpectedValueError(first.line, leftParenthesis.value, "(");
+                miniPLExceptionThrower.throwUnExpectedValueError(
+                    first.row,
+                    leftParenthesis.value,
+                    "("
+                );
             }
             List<Token> expressionTokens = new List<Token>();
             int i = 2;
@@ -146,16 +368,17 @@ namespace CompilersProject.Implementations
                 if (currentT.value != ")")
                 {
                     expressionTokens.Add(currentT);
-                } else
+                }
+                else
                 {
                     expr(assertNode, expressionTokens);
                     return;
                 }
                 i++;
             }
-            miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.line, ")");
+            miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.row, ")");
 
-            
+
         }
         public void print(Node<String> parent, List<Token> tokens)
         {
@@ -173,11 +396,12 @@ namespace CompilersProject.Implementations
             if (tokens.Count != 2)
             {
                 miniPLExceptionThrower.throwMiniPLExepction("Invalid usage of read");
-            } else
+            }
+            else
             {
                 Token varIdent = tokens[1];
-                string identifier = this.identifier(varIdent);
-                readNode.children.Add(new Node<string>($"id({identifier})"));
+                this.identifierCheck(varIdent);
+                readNode.children.Add(new Node<string>($"id({varIdent.value})"));
             }
 
         }
@@ -185,25 +409,40 @@ namespace CompilersProject.Implementations
         public void var(Node<String> parent, List<Token> tokens)
         {
             Token first = tokens[0];
-            Node<String> assignmentNode = parent;
+            Node<String> varAssignmentNode = new Node<string>("var_assignment");
+            parent.children.Add(varAssignmentNode);
 
             if (tokens.Count < 4)
             {
-                miniPLExceptionThrower.throwMiniPLExepction($"Invalid usage of var at row {first.line}");
+                miniPLExceptionThrower.throwMiniPLExepction($"Invalid usage of var at row {first.row}");
             }
             int identI = 1;
+            Token identToken = tokens[identI];
             int typeI = 3;
             int assignMentI = 4;
-            
-            string identifier = this.identifier(tokens[identI]);
-            
+
+            this.identifierCheck(identToken);
+
+            varAssignmentNode.children.Add(new Node<String>(identToken.value));
+
             if (tokens[2].value != ":")
             {
-                miniPLExceptionThrower.throwUnExpectedValueError(first.line, tokens[2].value, ":");
+                miniPLExceptionThrower.throwUnExpectedValueError(first.row, tokens[2].value, ":");
             }
-            
+
             string type = this.type(tokens[typeI]);
-            assignmentNode.children.Add(new Node<String>($"id({identifier})({type})"));
+
+            if (this.identifiers.GetValueOrDefault(identToken.value, new ParserIdentifier("undefined", -1)).type != "undefined")
+            {
+                miniPLExceptionThrower
+                    .throwMiniPLExepction($"Duplicate variable assignment at row {identToken.row}");
+            }
+            else
+            {
+                this.identifiers.Add(identToken.value, new ParserIdentifier(type, forLoopIndex));
+            }
+
+            varAssignmentNode.children.Add(new Node<String>(type));
             if (tokens.Count == 4)
             {
                 return;
@@ -212,12 +451,12 @@ namespace CompilersProject.Implementations
             Token assignmentToken = tokens[assignMentI];
             if (assignmentToken.value != ":=")
             {
-                miniPLExceptionThrower.throwUnExpectedValueError(first.line, assignmentToken.value, ":=");
+                miniPLExceptionThrower.throwUnExpectedValueError(first.row, assignmentToken.value, ":=");
             }
-            assignmentNode.children.Add(new Node<String>($":="));
+
             if (tokens.Count < 6)
             {
-                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.line, "expression");
+                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.row, "expression");
             }
 
             List<Token> expression = new List<Token>();
@@ -227,7 +466,7 @@ namespace CompilersProject.Implementations
                 expression.Add(tokens[i]);
                 i++;
             }
-            expr(assignmentNode, expression);
+            expr(varAssignmentNode, expression);
         }
 
         public void expr(Node<String> parent, List<Token> tokens)
@@ -243,11 +482,12 @@ namespace CompilersProject.Implementations
             {
                 if (tokens.Count < 2)
                 {
-                    miniPLExceptionThrower.throwInvalidError(first.line, "expression");
+                    miniPLExceptionThrower.throwInvalidError(first.row, "expression");
                 }
                 expressionNode.children.Add(new Node<string>("!"));
                 operand(expressionNode, tokens.GetRange(1, tokens.Count - 1));
-            } else
+            }
+            else
             {
                 List<Token> firstOperandTokens = new List<Token>();
                 Token operatorToken = null;
@@ -255,12 +495,13 @@ namespace CompilersProject.Implementations
                 while (i < tokens.Count)
                 {
                     Token t = tokens[i];
-                    if(miniPLHelper.isOperator(t.value))
+                    if (miniPLHelper.isOperator(t.value))
                     {
                         operatorToken = t;
                         i++;
                         break;
-                    } else
+                    }
+                    else
                     {
                         firstOperandTokens.Add(t);
                         i++;
@@ -270,7 +511,8 @@ namespace CompilersProject.Implementations
                 {
                     this.operand(expressionNode, firstOperandTokens);
                     return;
-                } else
+                }
+                else
                 {
                     this.operand(expressionNode, firstOperandTokens);
                     expressionNode.children.Add(new Node<string>($"{operatorToken.value}"));
@@ -279,10 +521,10 @@ namespace CompilersProject.Implementations
                     while (i < tokens.Count)
                     {
                         Token t = tokens[i];
-                        
-                        
-                         secondOperandTokens.Add(t);
-                         i++;
+
+
+                        secondOperandTokens.Add(t);
+                        i++;
                     }
                     this.operand(expressionNode, secondOperandTokens);
                 }
@@ -321,12 +563,13 @@ namespace CompilersProject.Implementations
                     i++;
                 }
                 // ")" not found
-                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.line, ")");
-            } else
+                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.row, ")");
+            }
+            else
             {
                 if (tokens.Count != 1)
                 {
-                    miniPLExceptionThrower.throwMiniPLExepction($"Invalid operand at line {first.line}");
+                    miniPLExceptionThrower.throwMiniPLExepction($"Invalid operand at row {first.row}");
                 }
 
                 string value = first.value;
@@ -334,40 +577,46 @@ namespace CompilersProject.Implementations
                 bool isNumeric = int.TryParse(value, out int numericValue);
                 if (isNumeric)
                 {
-                    operandNode.children.Add(new Node<String>($"number({numericValue})"));
+                    operandNode.children.Add(new Node<String>($"int({numericValue})"));
                     return;
-                } else if (miniPLHelper.isString(value))
+                }
+                else if (miniPLHelper.isString(value))
                 {
                     operandNode.children.Add(new Node<String>($"string({value})"));
                     return;
-                } else
+                }
+                else if (miniPLHelper.isBoolean(value))
                 {
-                    string identifier = this.identifier(first);
-                    operandNode.children.Add(new Node<String>($"id({identifier})"));
+                    operandNode.children.Add(new Node<String>($"bool({value})"));
+                    return;
+                }
+                else
+                {
+                    identifierCheck(first);
+                    operandNode.children.Add(new Node<String>($"id({first.value})"));
                     return;
                 }
 
             }
         }
 
-        public string identifier(Token t)
+        public string identifierCheck(Token t)
         {
             string value = t.value;
             char firstChar = value[0];
             if (!Char.IsLetter(firstChar))
             {
-                miniPLExceptionThrower.throwMiniPLExepction($"Invalid identifier '{value}' at row {t.line}");
+                miniPLExceptionThrower.throwMiniPLExepction($"Invalid identifier '{value}' at row {t.row}");
             }
 
-            foreach(char c in value)
+            foreach (char c in value)
             {
                 if (!Char.IsNumber(c) && !Char.IsLetter(c) && c != '_')
                 {
-                    miniPLExceptionThrower.throwMiniPLExepction($"Invalid identifier '{value}' at row {t.line}");
+                    miniPLExceptionThrower.throwMiniPLExepction($"Invalid identifier '{value}' at row {t.row}");
                 }
             }
 
-            this.identifiers.TryAdd(value, true);
 
             return value;
         }
@@ -375,10 +624,10 @@ namespace CompilersProject.Implementations
         public string type(Token t)
         {
             string value = t.value;
-            List<string> validTypes = new List<string>{ "int", "string", "bool" };
+            List<string> validTypes = new List<string> { "int", "string", "bool" };
             if (!validTypes.Contains(value))
             {
-                miniPLExceptionThrower.throwMiniPLExepction($"Invalid type '{value}' at row {t.line}");
+                miniPLExceptionThrower.throwMiniPLExepction($"Invalid type '{value}' at row {t.row}");
             }
 
             return value;

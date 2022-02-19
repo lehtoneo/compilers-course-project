@@ -10,7 +10,7 @@ namespace CompilersProject.Implementations
         public string[] MiniPlProgram { get; set; }
         private IScanner Scanner;
         private IParser Parser;
-        
+
 
         public Interpreter(IScanner scanner, IParser parser)
         {
@@ -36,24 +36,49 @@ namespace CompilersProject.Implementations
         }
         public void interpret(string[] miniPlProgram)
         {
+
             try
             {
+
+
                 List<Token> tokens = Scanner.scan(miniPlProgram);
                 Console.WriteLine("Tokens:");
-                foreach(Token t in tokens)
+                foreach (Token t in tokens)
                 {
                     Console.WriteLine(t.value);
                 }
                 Node<String> n = Parser.parse(tokens);
                 printNode(n);
-
-
-            } catch (MiniPLException e)
+            }
+            catch (MiniPLException e)
             {
                 Console.WriteLine("There was an error interpreting the minipl program");
                 Console.WriteLine(e.Message);
             }
         }
+
+        public void interpret(Node<String> node)
+        {
+            if (node.value == "$$")
+            {
+                return;
+            }
+            else if (node.value == "program")
+            {
+                foreach (Node<String> n in node.children)
+                {
+                    interpret(n);
+                }
+            }
+            else if (node.value == "stmt_list")
+            {
+                foreach (Node<string> s in node.children)
+                {
+                    interpret(s);
+                }
+            }
+        }
+
 
         public void interpret()
         {
