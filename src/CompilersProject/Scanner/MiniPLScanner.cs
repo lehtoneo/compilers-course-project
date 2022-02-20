@@ -25,6 +25,7 @@ namespace CompilersProject.Implementations
             List<Token> tokenList = new List<Token>();
             int lineI = 0;
             bool inString = false;
+            bool stringEscaping = false;
             foreach (string line in commentsRemoved)
             {
                 Console.WriteLine(line);
@@ -45,11 +46,20 @@ namespace CompilersProject.Implementations
                     if (inString)
                     {
                         token = token + c;
-                        if (c == '"')
+                        if (stringEscaping)
+                        {
+                            stringEscaping = false;
+                        }
+                        else if (c == '\\')
+                        {
+                            stringEscaping = true;
+                        }
+                        else if (c == '"')
                         {
                             tokenList.Add(new Token(token, lineI, colI, "identifier"));
                             token = "";
                             inString = false;
+                            stringEscaping = false;
                         }
                         continue;
                     }

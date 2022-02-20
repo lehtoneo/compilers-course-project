@@ -50,7 +50,7 @@ namespace CompilersProject.Implementations
             bool inLoop = false;
             int innerLoopCount = 0;
             int i = -1;
-            while (i < tokens.Count)
+            while (i + 1 < tokens.Count)
             {
 
                 i++;
@@ -142,7 +142,8 @@ namespace CompilersProject.Implementations
         public void stmt(Node<String> parent, List<Token> statement)
         {
 
-            Node<string> statementNode = parent;
+            Node<string> statementNode = new Node<string>("stmt");
+            parent.children.Add("stmt");
 
             if (statement.Count == 0)
             {
@@ -181,15 +182,28 @@ namespace CompilersProject.Implementations
         {
             forLoopIndex++;
 
-            Node<String> loopNode = parent;
+            Node<String> loopNode = new Node<string>("forloop");
             Token first = tokens[0];
-            loopNode.children.Add(new Node<string>("forloop"));
+            parent.children.Add(loopNode);
             if (tokens.Count < 2)
             {
                 miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.row, "identifier");
             }
             Token identifierToken = tokens[1];
             this.identifierCheck(identifierToken);
+            ParserIdentifier pI = this.identifiers.GetValueOrDefault(identifierToken.value, new ParserIdentifier("undefined", -1));
+            if (pI.type == "undefined")
+            {
+                miniPLExceptionThrower
+                    .throwUndefinedVariableError(identifierToken.row, identifierToken.value);
+            }
+
+            if (pI.type != "int")
+            {
+                miniPLExceptionThrower
+                    .throwMiniPLException($"Identifier error at row {identifierToken.row}: '{identifierToken.value}' has invalid type '{pI.type}', expected 'int'");
+            }
+
             loopNode.children.Add(new Node<string>(identifierToken.value));
 
             if (tokens.Count < 3)
@@ -206,7 +220,6 @@ namespace CompilersProject.Implementations
                 );
             }
 
-            loopNode.children.Add(new Node<string>("in"));
 
             if (tokens.Count < 4)
             {
@@ -224,9 +237,8 @@ namespace CompilersProject.Implementations
                 Token t = tokens[i];
                 if (t.value == "..")
                 {
-                    expr(loopNode, firstExpressionTokens);
-                    loopNode.children.Add(new Node<string>(".."));
-                    i++;
+
+
                     break;
                 }
                 else
@@ -237,9 +249,14 @@ namespace CompilersProject.Implementations
             }
             if (firstExpressionTokens.Count == 0)
             {
-                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.row, "expression");
+                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(tokens[i - 1].row, "expression");
             }
 
+            expr(loopNode, firstExpressionTokens);
+            Token shouldBeDotsToken = tokens[i];
+            miniPLHelper.checkTokenThrowsMiniPLError(shouldBeDotsToken, "..");
+
+            i++;
             List<Token> secondExpressionTokens = new List<Token>();
             while (i < tokens.Count)
             {
@@ -256,12 +273,15 @@ namespace CompilersProject.Implementations
                 i++;
             }
 
+            if (secondExpressionTokens.Count == 0)
+            {
+                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(tokens[i - 1].row, "expression");
+            }
+
             expr(loopNode, secondExpressionTokens);
             Token shouldBeDoToken = tokens[i];
 
             miniPLHelper.checkTokenThrowsMiniPLError(shouldBeDoToken, "do");
-
-            loopNode.children.Add(new Node<string>("do"));
 
             List<Token> statements = new List<Token>();
             i++;
@@ -342,13 +362,22 @@ namespace CompilersProject.Implementations
                 expressionTokens.Add(curToken);
                 i++;
             }
-            expr(assignmentNode, expressionTokens);
+            string type = expr(assignmentNode, expressionTokens);
+            ParserIdentifier pI = identifiers.GetValueOrDefault(identifier);
+            if (type != pI.type)
+            {
+                miniPLExceptionThrower
+                    .throwMiniPLException($"Invalid assignment at row {ident.row}: cannot convert type '{pI.type}' to type '{type}' ");
+            }
 
         }
         public void assert(Node<String> parent, List<Token> tokens)
         {
-            Node<String> assertNode = parent;
-            assertNode.children.Add(new Node<string>("assert"));
+
+            Node<String> assertNode = new Node<string>("assert");
+
+            parent.children.Add(assertNode);
+
             Token first = tokens[0];
             if (tokens.Count < 2)
             {
@@ -374,7 +403,12 @@ namespace CompilersProject.Implementations
                 }
                 else
                 {
-                    expr(assertNode, expressionTokens);
+                    string expressionType = expr(assertNode, expressionTokens);
+                    if (expressionType != "bool")
+                    {
+                        miniPLExceptionThrower
+                            .throwMiniPLException($"expected expression return value 'bool' at row {first.row}, found {expressionType}");
+                    }
                     return;
                 }
                 i++;
@@ -400,14 +434,27 @@ namespace CompilersProject.Implementations
 
             if (tokens.Count != 2)
             {
-                miniPLExceptionThrower.throwMiniPLExepction("Invalid usage of read");
+                miniPLExceptionThrower.throwMiniPLException("Invalid usage of read");
             }
             else
             {
                 Token varIdent = tokens[1];
                 this.identifierCheck(varIdent);
+                ParserIdentifier pI = this.identifiers.GetValueOrDefault(varIdent.value, new ParserIdentifier("undefined", -1));
+
                 readNode.children.Add(new Node<string>(varIdent.value));
-                this.identifiers.Add(varIdent.value, new ParserIdentifier("", forLoopIndex));
+
+                if (pI.type == "undefined")
+                {
+                    miniPLExceptionThrower.throwUndefinedVariableError(varIdent.row, varIdent.value);
+                }
+
+                List<string> validReadTypes = new List<string> { "int", "string" };
+                if (!validReadTypes.Contains(pI.type))
+                {
+                    miniPLExceptionThrower
+                        .throwMiniPLException($"Invalid read at row {varIdent.row}. Cannot read variable of type '{pI.type}'");
+                }
             }
 
         }
@@ -420,7 +467,7 @@ namespace CompilersProject.Implementations
 
             if (tokens.Count < 4)
             {
-                miniPLExceptionThrower.throwMiniPLExepction($"Invalid usage of var at row {first.row}");
+                miniPLExceptionThrower.throwMiniPLException($"Invalid usage of var at row {first.row}");
             }
             int identI = 1;
             Token identToken = tokens[identI];
@@ -441,7 +488,7 @@ namespace CompilersProject.Implementations
             if (this.identifiers.GetValueOrDefault(identToken.value, new ParserIdentifier("undefined", -1)).type != "undefined")
             {
                 miniPLExceptionThrower
-                    .throwMiniPLExepction($"Duplicate variable assignment at row {identToken.row}");
+                    .throwMiniPLException($"Duplicate variable assignment at row {identToken.row}");
             }
             else
             {
@@ -552,7 +599,17 @@ namespace CompilersProject.Implementations
                     {
                         miniPLExceptionThrower.throwInvalidExpressionError(operatorToken.row, firstOperandType, secondOperandType);
                     }
-                    return secondOperandType;
+
+                    if (op == "+")
+                    {
+                        return firstOperandType;
+                    }
+                    else
+                    {
+                        return miniPLHelper.getReturnTypeFromOperator(op);
+                    }
+
+
                 }
             }
 
@@ -607,7 +664,7 @@ namespace CompilersProject.Implementations
             {
                 if (tokens.Count != 1)
                 {
-                    miniPLExceptionThrower.throwMiniPLExepction($"Invalid operand at row {first.row}");
+                    miniPLExceptionThrower.throwMiniPLException($"Invalid operand at row {first.row}");
                 }
 
                 string value = first.value;
@@ -649,17 +706,24 @@ namespace CompilersProject.Implementations
         public string identifierCheck(Token t)
         {
             string value = t.value;
+
+            if (miniPLHelper.isReservedKeyword(value))
+            {
+                miniPLExceptionThrower
+                    .throwMiniPLException($"Invalid identifier: invalid usage of keyword '{value}' as identifier");
+            }
+
             char firstChar = value[0];
             if (!Char.IsLetter(firstChar))
             {
-                miniPLExceptionThrower.throwMiniPLExepction($"Invalid identifier '{value}' at row {t.row}");
+                miniPLExceptionThrower.throwMiniPLException($"Invalid identifier '{value}' at row {t.row}");
             }
 
             foreach (char c in value)
             {
                 if (!Char.IsNumber(c) && !Char.IsLetter(c) && c != '_')
                 {
-                    miniPLExceptionThrower.throwMiniPLExepction($"Invalid identifier '{value}' at row {t.row}");
+                    miniPLExceptionThrower.throwMiniPLException($"Invalid identifier '{value}' at row {t.row}");
                 }
             }
 
@@ -672,7 +736,7 @@ namespace CompilersProject.Implementations
 
             if (!miniPLHelper.isValidType(t))
             {
-                miniPLExceptionThrower.throwMiniPLExepction($"Invalid type '{t.value}' at row {t.row}");
+                miniPLExceptionThrower.throwMiniPLException($"Invalid type '{t.value}' at row {t.row}");
             }
 
             return t.value;

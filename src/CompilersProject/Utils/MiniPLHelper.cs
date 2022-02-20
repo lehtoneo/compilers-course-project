@@ -109,6 +109,34 @@ namespace CompilersProject.Utils
 
         public bool isValidType(Token t) { return isValidType(t.value); }
 
+        public string getReturnTypeFromOperator(string op)
+        {
+            if (op == "+")
+            {
+                throw new Exception("Cannot declare return type for operator + (can be int or string)");
+            }
+            if (!isOperator(op))
+            {
+                miniPLExceptionThrower
+                    .throwMiniPLException($"Invalid operator '{op}'");
+            }
+
+            List<string> intOperators = new List<string> { "-", "*", "/" };
+            if (intOperators.Contains(op))
+            {
+                return "int";
+            }
+
+            List<string> boolOperators = new List<string> { "&", "!", "=", "<" };
+
+            if (boolOperators.Contains(op))
+            {
+                return "bool";
+            }
+
+            // should never be here
+            return "";
+        }
 
 
         public bool isValidOperatorForType(string op, string type)
@@ -139,7 +167,7 @@ namespace CompilersProject.Utils
             }
             else if (type == "bool")
             {
-                List<string> validBoolOperands = new List<string> { "&" };
+                List<string> validBoolOperands = new List<string> { "&", "!" };
                 return validBoolOperands.Contains(op);
             }
             else

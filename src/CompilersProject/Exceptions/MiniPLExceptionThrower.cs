@@ -17,12 +17,12 @@ namespace CompilersProject.Exceptions
             this.errorPlace = errorPlace;
         }
 
-        public MiniPLException throwMiniPLExepction(string error)
+        public MiniPLException throwMiniPLException(string error)
         {
             string finalError = "";
             if (this.errorPlace != null)
             {
-                finalError = $"Error in {errorPlace}: {error}";
+                finalError = $"{errorPlace} error: {error}";
             }
             else
             {
@@ -35,7 +35,7 @@ namespace CompilersProject.Exceptions
         public void throwUnExpectedSymbolError(int row, char symbol)
         {
             string error = $"UnExpected symbol '{symbol}' at row {row}";
-            throwMiniPLExepction(error);
+            throwMiniPLException(error);
         }
 
 
@@ -43,7 +43,7 @@ namespace CompilersProject.Exceptions
         public void throwUnExpectedValueError(int row, string value, string expected)
         {
             string error = $"UnExpected value '{value}' at row {row} expected '{expected}'";
-            throwMiniPLExepction(error);
+            throwMiniPLException(error);
         }
 
         public void throwExpectedSomethingFoundNothingError(int row, string expected)
@@ -58,37 +58,37 @@ namespace CompilersProject.Exceptions
                 finalError = $"Expected {expected} at row {row} found nothing.";
             }
 
-            throwMiniPLExepction(finalError);
+            throwMiniPLException(finalError);
         }
 
         public void throwInvalidError(int row, string invalid)
         {
             string error = $"Invalid '{invalid}' at row {row}";
-            throwMiniPLExepction(error);
+            throwMiniPLException(error);
         }
 
         public void throwUndefinedVariableError(int row, string variable)
         {
             string error = $"Undefined variable at row {row} : Variable '{variable}' is undefined";
-            throwMiniPLExepction(error);
+            throwMiniPLException(error);
         }
 
         public void throwInvalidExpressionError(int row, string expectedType, string receivedType)
         {
             string error = $"Invalid expression at row {row} : expected type {expectedType}, received {receivedType}";
-            throwMiniPLExepction(error);
+            throwMiniPLException(error);
         }
 
         public void throwInvalidUsageOfOperatorError(int row, string op, string type)
         {
             string error = $"Invalid expression at row {row} : invalid operator '{op}' for type '{type}'";
-            throwMiniPLExepction(error);
+            throwMiniPLException(error);
         }
 
         public void throwInvalidOperatorError(int row, string op, string type)
         {
             string error = $"Invalid operator '{op}' for type {type} at row {row}: ";
-            throwMiniPLExepction(error);
+            throwMiniPLException(error);
         }
 
     }

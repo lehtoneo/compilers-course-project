@@ -12,9 +12,10 @@ namespace CompilersProject.Implementations
         private IParser Parser;
         private Dictionary<string, Operand> identifiers;
         private MiniPLHelper MiniPLHelper;
+        private MiniPLExceptionThrower miniPLExceptionThrower = new MiniPLExceptionThrower("Runtime");
         public Interpreter(IScanner scanner, IParser parser)
         {
-            this.MiniPLHelper = new MiniPLHelper(null);
+            this.MiniPLHelper = new MiniPLHelper(miniPLExceptionThrower);
             this.Scanner = scanner;
             this.Parser = parser;
         }
@@ -123,26 +124,73 @@ namespace CompilersProject.Implementations
                 Node<string> expressionNode = node.children[0];
 
                 Operand expressionValue = getExpressionValue(expressionNode);
-                Console.WriteLine(expressionValue.value);
+                Console.Write(expressionValue.ToString());
 
             }
             else if (node.value == "read")
             {
                 string identifierName = node.children[0].value;
+                Operand identifier = identifiers[identifierName];
 
                 string readValue = Console.ReadLine();
-                string type;
 
-                if (MiniPLHelper.isInt(readValue))
+                if (identifier.type == "int")
                 {
-                    type = "int";
-                }
-                else
-                {
-                    type = "string";
+                    if (!MiniPLHelper.isInt(readValue))
+                    {
+                        miniPLExceptionThrower
+                            .throwMiniPLException($"Cannot cast {readValue} to type 'int'");
+                    }
                 }
 
-                this.identifiers.Add(identifierName, new Operand(readValue, type));
+
+                this.identifiers[identifierName].value = readValue;
+            }
+            else if (node.value == "assert")
+            {
+                Node<string> expressionNode = node.children[0];
+
+                Operand expressionOperand = getExpressionValue(expressionNode);
+
+                if (expressionOperand.type != "bool")
+                {
+                    miniPLExceptionThrower
+                        .throwMiniPLException($"expected a bool expression for assert statement. Found {expressionOperand.type}");
+                }
+                Console.WriteLine("");
+                Console.WriteLine($"ASSERT {expressionOperand.value}");
+            }
+            else if (node.value == "forloop")
+            {
+                Node<string> loopVariableNode = node.children[0];
+                string loopVariableName = loopVariableNode.value;
+
+                Operand initLoopVarValues = identifiers[loopVariableName];
+                Operand initialLoopOperand = new Operand(initLoopVarValues.value, initLoopVarValues.type);
+
+                Node<string> firstExpressionNode = node.children[1];
+                Node<string> secondExpressionNode = node.children[2];
+                Node<string> statementsNode = node.children[3];
+                int firstExpressionValue = getExpressionValue(firstExpressionNode).valueToInt();
+                int secondExpressionValue = getExpressionValue(secondExpressionNode).valueToInt();
+
+                identifiers[loopVariableName].value = firstExpressionValue.ToString();
+
+                while (true)
+                {
+                    string loopVariableValueString = identifiers[loopVariableName].value;
+                    int.TryParse(loopVariableValueString, out int i);
+                    if (i > secondExpressionValue)
+                    {
+                        break;
+                    }
+                    interpret(statementsNode);
+                    int newI = i + 1;
+                    identifiers[loopVariableName].value = newI.ToString();
+                }
+
+                identifiers[loopVariableName] = initialLoopOperand;
+
             }
         }
 
@@ -163,22 +211,47 @@ namespace CompilersProject.Implementations
                 {
                     return operand1 * operand2;
                 }
+                else if (op == "-")
+                {
+                    return operand1 - operand2;
+                }
+                else if (op == "/")
+                {
+                    return operand1 / operand2;
+                }
+                else if (op == "&")
+                {
+                    return operand1 & operand2;
+                }
+                else if (op == "=")
+                {
+                    return operand1 == operand2;
+                }
+                else if (op == "<")
+                {
+                    return operand1 < operand2;
+                }
                 else
                 {
                     throw new NotImplementedException();
                 }
 
+            }
+            else if (expressionNode.children.Count == 2)
+            {
 
+                Node<string> operandNode = expressionNode.children[1];
 
+                Operand opnd = getOperandValue(operandNode);
+                return !opnd;
             }
             else if (expressionNode.children.Count == 1)
             {
-                Node<string> childNode = expressionNode.children[0];
-                return getOperandValue(childNode);
-
+                Node<string> operandNode = expressionNode.children[0];
+                return getOperandValue(operandNode);
             }
             else
-            {   // unary opnd
+            {
                 throw new NotImplementedException();
             }
         }

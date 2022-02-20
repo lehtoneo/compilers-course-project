@@ -36,9 +36,5 @@ namespace CompilersProject.Implementations
             this.type = type;
         }
 
-        public override string ToString()
-        {
-            return $"{{value: {this.value}}}";
-        }
     }
 }
