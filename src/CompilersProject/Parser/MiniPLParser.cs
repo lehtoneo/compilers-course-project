@@ -153,7 +153,7 @@ namespace CompilersProject.Implementations
 
             if (firstToken.value == "var")
             {
-                var(statementNode, statement);
+                this.var(statementNode, statement);
             }
             else if (firstToken.value == "read")
             {
