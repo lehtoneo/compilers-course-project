@@ -142,8 +142,7 @@ namespace CompilersProject.Implementations
         public void stmt(Node<String> parent, List<Token> statement)
         {
 
-            Node<string> statementNode = new Node<string>("stmt");
-            parent.children.Add("stmt");
+            Node<string> statementNode = parent;
 
             if (statement.Count == 0)
             {
