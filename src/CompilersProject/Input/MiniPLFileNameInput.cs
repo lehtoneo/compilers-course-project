@@ -18,16 +18,17 @@ namespace CompilersProject.Implementations
                 string input = Console.ReadLine();
                 string path = $"miniPL-programs\\{input}";
 
-                string projectDir = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory + @"..\..\..\");
+                string projectDir = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory + @"..\\..\\..\\");
                 miniPLPath = Path.Combine(projectDir, path);
 
                 if (File.Exists(miniPLPath))
                 {
 
                     validNameFound = true;
-                } else
+                }
+                else
                 {
-                    Console.WriteLine($"File {input} not found");
+                    Console.WriteLine($"File {miniPLPath} not found");
                     Console.WriteLine($"Try again or CTRL + C to exit");
                 }
             }
