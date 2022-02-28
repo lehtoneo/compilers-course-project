@@ -9,34 +9,32 @@ namespace CompilersProject.Implementations
 
         private string getPath()
         {
-            bool validNameFound = false;
-            string miniPLPath = "";
-            while (!validNameFound)
+            string projectDir = System.AppDomain.CurrentDomain.BaseDirectory;
+            projectDir = Path.Combine(projectDir, "..");
+            projectDir = Path.Combine(projectDir, "..");
+            projectDir = Path.Combine(projectDir, "..");
+
+            string miniPLPath = Path.Combine(projectDir, "miniPL-programs");
+            while (true)
             {
+
                 Console.WriteLine("Give the name of MiniPL program in folder (miniPL-programs):");
 
                 string input = Console.ReadLine();
-                string path = $"miniPL-programs\\{input}";
 
-                string projectDir = System.AppDomain.CurrentDomain.BaseDirectory;
-                projectDir = Path.Combine(projectDir, "..");
-                projectDir = Path.Combine(projectDir, "..");
-                projectDir = Path.Combine(projectDir, "..");
-
-                miniPLPath = Path.Combine(projectDir, path);
-
-                if (File.Exists(miniPLPath))
+                string finalPath = Path.Combine(miniPLPath, input);
+                if (File.Exists(finalPath))
                 {
 
-                    validNameFound = true;
+                    return finalPath;
                 }
                 else
                 {
-                    Console.WriteLine($"File {miniPLPath} not found");
+                    Console.WriteLine($"File {finalPath} not found");
                     Console.WriteLine($"Try again or CTRL + C to exit");
                 }
             }
-            return miniPLPath;
+
         }
         public string[] readMiniPLProgram()
         {
