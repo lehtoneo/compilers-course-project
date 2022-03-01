@@ -51,7 +51,7 @@ namespace CompilersProject.Implementations
                     Console.WriteLine(t.value);
                 }
                 Node<String> n = Parser.parse(tokens);
-
+                Console.WriteLine("AST:");
                 printNode(n);
 
                 Console.WriteLine("Program: ");
@@ -59,7 +59,7 @@ namespace CompilersProject.Implementations
                 Console.WriteLine("------------");
 
                 interpret(n);
-
+                Console.WriteLine("");
                 Console.WriteLine("------------");
 
             }
