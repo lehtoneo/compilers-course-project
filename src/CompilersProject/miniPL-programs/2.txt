@@ -2,14 +2,8 @@ var nTimes : int := 0;
 print "How many times?";
 read nTimes;
 var x : int;
-var y: int;
 for x in 0..nTimes-1 do
-	for y in 0..nTimes-1 do
-		print "X: ";
-		print x;
-		print "\nY: ";
-		print y;
-		print "\n";
-	end for;
+	print x;
+	print " : Hello, World!\n";
 end for;
 assert (x = nTimes);

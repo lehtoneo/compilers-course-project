@@ -1,4 +1,2 @@
-print "Mo!";
-
 var X : int := 4 + (6 * 2);
-X := "moi";
+print X;
