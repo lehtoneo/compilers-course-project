@@ -28,6 +28,7 @@ namespace CompilersProject.Implementations
         }
 
 
+
         public void printNode(Node<string> node)
         {
             consoleIO.WriteLine(node.value);
@@ -41,6 +42,7 @@ namespace CompilersProject.Implementations
         }
 
 
+
         public void interpret(string[] miniPlProgram)
         {
 
@@ -51,15 +53,15 @@ namespace CompilersProject.Implementations
 
                 List<Token> tokens = Scanner.scan(miniPlProgram);
 
-                Node<String> parseTree = Parser.parse(tokens);
+                Node<String> ast = Parser.parse(tokens);
                 consoleIO.WriteLine("AST:");
-                printNode(parseTree);
+                ast.PrintPretty("", true);
 
                 consoleIO.WriteLine("Program: ");
 
                 consoleIO.WriteLine("------------");
 
-                interpret(parseTree);
+                interpret(ast);
                 consoleIO.WriteLine("");
                 consoleIO.WriteLine("------------");
 
@@ -82,13 +84,6 @@ namespace CompilersProject.Implementations
                 foreach (Node<String> n in node.children)
                 {
                     interpret(n);
-                }
-            }
-            else if (node.value == "stmt_list")
-            {
-                foreach (Node<string> s in node.children)
-                {
-                    interpret(s);
                 }
             }
             else if (node.value == "var_assignment")
