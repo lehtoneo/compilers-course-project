@@ -7,12 +7,14 @@ namespace CompilersProject.Implementations
 {
     public class Interpreter : IInterpreter
     {
-        public string[] MiniPlProgram { get; set; }
         private IScanner Scanner;
         private IParser Parser;
         private Dictionary<string, Operand> identifiers;
         private MiniPLHelper MiniPLHelper;
         private MiniPLExceptionThrower miniPLExceptionThrower = new MiniPLExceptionThrower("Runtime");
+        private IConsoleIO consoleIO = new ConsoleIO();
+
+
         public Interpreter(IScanner scanner, IParser parser)
         {
             this.MiniPLHelper = new MiniPLHelper(miniPLExceptionThrower);
@@ -20,14 +22,15 @@ namespace CompilersProject.Implementations
             this.Parser = parser;
         }
 
-        public Interpreter(string[] miniPLProgram, IScanner scanner, IParser parser) : this(scanner, parser)
+        public Interpreter(IScanner scanner, IParser parser, IConsoleIO consoleIO) : this(scanner, parser)
         {
-            this.MiniPlProgram = miniPLProgram;
+            this.consoleIO = consoleIO;
         }
+
 
         public void printNode(Node<string> node)
         {
-            Console.WriteLine(node.value);
+            consoleIO.WriteLine(node.value);
             if (node.children.Count > 0)
             {
                 foreach (Node<string> n in node.children)
@@ -45,28 +48,24 @@ namespace CompilersProject.Implementations
                 this.identifiers = new Dictionary<string, Operand>();
 
                 List<Token> tokens = Scanner.scan(miniPlProgram);
-                Console.WriteLine("Tokens:");
-                foreach (Token t in tokens)
-                {
-                    Console.WriteLine(t.value);
-                }
+
                 Node<String> n = Parser.parse(tokens);
-                Console.WriteLine("AST:");
+                consoleIO.WriteLine("AST:");
                 printNode(n);
 
-                Console.WriteLine("Program: ");
+                consoleIO.WriteLine("Program: ");
 
-                Console.WriteLine("------------");
+                consoleIO.WriteLine("------------");
 
                 interpret(n);
-                Console.WriteLine("");
-                Console.WriteLine("------------");
+                consoleIO.WriteLine("");
+                consoleIO.WriteLine("------------");
 
             }
             catch (MiniPLException e)
             {
-                Console.WriteLine("There was an error interpreting the minipl program");
-                Console.WriteLine(e.Message);
+                consoleIO.WriteLine("There was an error interpreting the minipl program");
+                consoleIO.WriteLine(e.Message);
             }
         }
 
@@ -124,7 +123,7 @@ namespace CompilersProject.Implementations
                 Node<string> expressionNode = node.children[0];
 
                 Operand expressionValue = getExpressionValue(expressionNode);
-                Console.Write(expressionValue.ToString());
+                consoleIO.Write(expressionValue.ToString());
 
             }
             else if (node.value == "read")
@@ -132,7 +131,7 @@ namespace CompilersProject.Implementations
                 string identifierName = node.children[0].value;
                 Operand identifier = identifiers[identifierName];
 
-                string readValue = Console.ReadLine();
+                string readValue = consoleIO.ReadLine();
 
                 if (identifier.type == "int")
                 {
@@ -157,8 +156,8 @@ namespace CompilersProject.Implementations
                     miniPLExceptionThrower
                         .throwMiniPLException($"expected a bool expression for assert statement. Found {expressionOperand.type}");
                 }
-                Console.WriteLine("");
-                Console.WriteLine($"ASSERT {expressionOperand.value}");
+                consoleIO.WriteLine("");
+                consoleIO.WriteLine($"ASSERT {expressionOperand.value}");
             }
             else if (node.value == "forloop")
             {
@@ -277,14 +276,5 @@ namespace CompilersProject.Implementations
         }
 
 
-        public void interpret()
-        {
-            if (this.MiniPlProgram == null)
-            {
-                throw new InvalidOperationException("MiniPlProgram not defined");
-            }
-
-            interpret(this.MiniPlProgram);
-        }
     }
 }

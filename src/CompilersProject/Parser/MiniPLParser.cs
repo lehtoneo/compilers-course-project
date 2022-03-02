@@ -572,6 +572,7 @@ namespace CompilersProject.Implementations
                 }
                 else
                 {
+
                     string firstOperandType = this.Operand(expressionNode, firstOperandTokens);
                     string op = operatorToken.value;
 
