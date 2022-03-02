@@ -10,3 +10,4 @@
 | 19.2.2022 | 6 | Add initial interpreting |
 | 22.2.2022 | 9 | Create initial working interpreter |
 | 1.3.2022  | 4 | Specify tokens as regular expressions |
+| 2.3.2022  | 4 | Remove commentremover and implement it better at scanne |
