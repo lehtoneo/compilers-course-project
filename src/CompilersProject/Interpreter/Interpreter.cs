@@ -171,6 +171,23 @@ namespace CompilersProject.Implementations
 
                 Node<string> firstExpressionNode = node.children[1];
                 Node<string> secondExpressionNode = node.children[2];
+
+                List<Node<string>> statements = new List<Node<string>>();
+                int statementsStartIndex = 3;
+                int stmtI = statementsStartIndex;
+                while (true)
+                {
+                    Node<string> statementNode = node.children[stmtI];
+                    if (statementNode.value == "$$")
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        statements.Add(statementNode);
+                    }
+                    stmtI++;
+                }
                 Node<string> statementsNode = node.children[3];
                 int firstExpressionValue = getExpressionValue(firstExpressionNode).valueToInt();
                 int secondExpressionValue = getExpressionValue(secondExpressionNode).valueToInt();
@@ -185,7 +202,11 @@ namespace CompilersProject.Implementations
                     {
                         break;
                     }
-                    interpret(statementsNode);
+
+                    foreach (Node<string> stmt in statements)
+                    {
+                        interpret(stmt);
+                    }
                     int newI = i + 1;
                     identifiers[loopVariableName].value = newI.ToString();
                 }

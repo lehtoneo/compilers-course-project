@@ -44,8 +44,6 @@ namespace CompilersProject.Implementations
                 return;
             }
 
-            Node<String> stmtListNode = new Node<String>("stmt_list");
-            parent.children.Add(stmtListNode);
             List<Token> firstStatement = new List<Token>();
             bool inLoop = false;
             int innerLoopCount = 0;
@@ -128,7 +126,7 @@ namespace CompilersProject.Implementations
                     }
                 }
             }
-            stmt(stmtListNode, firstStatement);
+            stmt(parent, firstStatement);
             List<Token> restOfStatements = new List<Token>();
             while (i < tokens.Count)
             {
@@ -137,7 +135,7 @@ namespace CompilersProject.Implementations
                 i++;
             }
 
-            stmt_list(stmtListNode, restOfStatements);
+            stmt_list(parent, restOfStatements);
         }
         public void stmt(Node<String> parent, List<Token> statement)
         {
