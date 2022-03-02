@@ -26,26 +26,26 @@ namespace CompilersProject.Implementations
 
             this.Tokens = tokens;
 
-            Node<String> programNode = new Node<String>("program");
+            Node<String> parseTree = new Node<String>("program");
 
-            stmt_list(programNode, tokens);
+            stmt_list(parseTree, tokens);
 
-            return programNode;
+            return parseTree;
 
         }
 
 
 
-        public void stmt_list(Node<String> root, List<Token> tokens)
+        public void stmt_list(Node<String> parent, List<Token> tokens)
         {
             if (tokens.Count == 0)
             {
-                root.children.Add(new Node<string>("$$"));
+                parent.children.Add(new Node<string>("$$"));
                 return;
             }
 
             Node<String> stmtListNode = new Node<String>("stmt_list");
-            root.children.Add(stmtListNode);
+            parent.children.Add(stmtListNode);
             List<Token> firstStatement = new List<Token>();
             bool inLoop = false;
             int innerLoopCount = 0;
@@ -529,8 +529,7 @@ namespace CompilersProject.Implementations
             {
                 miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(-1, "expression");
             }
-            Node<String> expressionNode = new Node<String>("expression");
-            parent.children.Add(expressionNode);
+
             Token first = tokens[0];
             if (miniPLHelper.isUnaryOperator(first.value))
             {
@@ -538,9 +537,10 @@ namespace CompilersProject.Implementations
                 {
                     miniPLExceptionThrower.throwInvalidError(first.row, "expression");
                 }
-                expressionNode.children.Add(new Node<string>("!"));
+                Node<string> unaryNode = new Node<string>("!");
+                parent.children.Add(unaryNode);
 
-                string operandType = Operand(expressionNode, tokens.GetRange(1, tokens.Count - 1));
+                string operandType = Operand(unaryNode, tokens.GetRange(1, tokens.Count - 1));
                 if (operandType != "bool")
                 {
                     miniPLExceptionThrower.throwInvalidUsageOfOperatorError(first.row, "!", operandType);
@@ -570,21 +570,20 @@ namespace CompilersProject.Implementations
                 if (operatorToken == null)
                 {
 
-                    return this.Operand(expressionNode, firstOperandTokens);
+                    return this.Operand(parent, firstOperandTokens);
                 }
                 else
                 {
-
-                    string firstOperandType = this.Operand(expressionNode, firstOperandTokens);
                     string op = operatorToken.value;
+                    Node<string> operatorNode = new Node<string>(op);
+                    parent.children.Add(operatorNode);
+                    string firstOperandType = this.Operand(operatorNode, firstOperandTokens);
+
 
                     if (!miniPLHelper.isValidOperatorForType(op, firstOperandType))
                     {
                         miniPLExceptionThrower.throwInvalidOperatorError(operatorToken.row, op, firstOperandType);
                     }
-
-
-                    expressionNode.children.Add(new Node<string>(op));
 
                     List<Token> secondOperandTokens = new List<Token>();
 
@@ -596,7 +595,7 @@ namespace CompilersProject.Implementations
                         secondOperandTokens.Add(t);
                         i++;
                     }
-                    string secondOperandType = Operand(expressionNode, secondOperandTokens);
+                    string secondOperandType = Operand(operatorNode, secondOperandTokens);
                     if (firstOperandType != secondOperandType)
                     {
                         miniPLExceptionThrower.throwInvalidExpressionError(operatorToken.row, firstOperandType, secondOperandType);
@@ -621,8 +620,7 @@ namespace CompilersProject.Implementations
 
         public string Operand(Node<String> parent, List<Token> tokens)
         {
-            Node<String> operandNode = new Node<string>("operand");
-            parent.children.Add(operandNode);
+            Node<String> operandNode = parent;
 
             if (tokens.Count < 1)
             {

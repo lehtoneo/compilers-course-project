@@ -39,6 +39,8 @@ namespace CompilersProject.Implementations
                 }
             }
         }
+
+
         public void interpret(string[] miniPlProgram)
         {
 
@@ -49,15 +51,15 @@ namespace CompilersProject.Implementations
 
                 List<Token> tokens = Scanner.scan(miniPlProgram);
 
-                Node<String> n = Parser.parse(tokens);
+                Node<String> parseTree = Parser.parse(tokens);
                 consoleIO.WriteLine("AST:");
-                printNode(n);
+                printNode(parseTree);
 
                 consoleIO.WriteLine("Program: ");
 
                 consoleIO.WriteLine("------------");
 
-                interpret(n);
+                interpret(parseTree);
                 consoleIO.WriteLine("");
                 consoleIO.WriteLine("------------");
 
@@ -195,85 +197,70 @@ namespace CompilersProject.Implementations
 
         public Operand getExpressionValue(Node<String> expressionNode)
         {
-            if (expressionNode.children.Count == 3)
+            string value = expressionNode.value;
+            bool isOperator = MiniPLHelper.isOperator(value);
+
+            if (isOperator)
             {
-
-                Operand operand1 = getOperandValue(expressionNode.children[0]);
-                string op = expressionNode.children[1].value;
-                Operand operand2 = getOperandValue(expressionNode.children[2]);
-
-                if (op == "+")
+                string op = value;
+                Operand operand1 = getExpressionValue(expressionNode.children[0]);
+                if (op == "!")
                 {
-                    return operand1 + operand2;
-                }
-                else if (op == "*")
-                {
-                    return operand1 * operand2;
-                }
-                else if (op == "-")
-                {
-                    return operand1 - operand2;
-                }
-                else if (op == "/")
-                {
-                    return operand1 / operand2;
-                }
-                else if (op == "&")
-                {
-                    return operand1 & operand2;
-                }
-                else if (op == "=")
-                {
-                    return operand1 == operand2;
-                }
-                else if (op == "<")
-                {
-                    return operand1 < operand2;
+                    return !operand1;
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    Operand operand2 = getExpressionValue(expressionNode.children[1]);
+                    if (op == "+")
+                    {
+                        return operand1 + operand2;
+                    }
+                    else if (op == "*")
+                    {
+                        return operand1 * operand2;
+                    }
+                    else if (op == "-")
+                    {
+                        return operand1 - operand2;
+                    }
+                    else if (op == "/")
+                    {
+                        return operand1 / operand2;
+                    }
+                    else if (op == "&")
+                    {
+                        return operand1 & operand2;
+                    }
+                    else if (op == "=")
+                    {
+                        return operand1 == operand2;
+                    }
+                    else if (op == "<")
+                    {
+                        return operand1 < operand2;
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
                 }
-
-            }
-            else if (expressionNode.children.Count == 2)
-            {
-
-                Node<string> operandNode = expressionNode.children[1];
-
-                Operand opnd = getOperandValue(operandNode);
-                return !opnd;
-            }
-            else if (expressionNode.children.Count == 1)
-            {
-                Node<string> operandNode = expressionNode.children[0];
-                return getOperandValue(operandNode);
             }
             else
             {
-                throw new NotImplementedException();
-            }
-        }
-
-        public Operand getOperandValue(Node<string> operandNode)
-        {
-            Node<string> childNode = operandNode.children[0];
-            if (childNode.value == "expression")
-            {
-                return getExpressionValue(childNode);
-            }
-            else
-            {
-                string idOrType = childNode.value.Split('(')[0];
-                string value = childNode.value.Split('(')[1].Split(')')[0];
+                string idOrType = value.Split('(')[0];
+                string operandValue = value.Split('(')[1].Split(')')[0];
                 if (idOrType == "id")
                 {
-                    return this.identifiers.GetValueOrDefault(value);
+                    return this.identifiers.GetValueOrDefault(operandValue);
                 }
 
-                return new Operand(value, idOrType);
+                return new Operand(operandValue, idOrType);
             }
+
+
         }
+
+
 
 
     }
