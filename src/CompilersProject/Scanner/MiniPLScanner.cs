@@ -20,15 +20,15 @@ namespace CompilersProject.Implementations
 
         public override List<Token> scan(string[] program)
         {
-            string[] commentsRemoved = this.commentRemover.removeComments(program);
+            string[] commentsRemoved = program;
 
             List<Token> tokenList = new List<Token>();
             int lineI = 0;
             bool inString = false;
             bool stringEscaping = false;
+            int multiLineCommentIndex = 0;
             foreach (string line in commentsRemoved)
             {
-                Console.WriteLine(line);
                 lineI++;
                 string token = "";
                 int colI = -1;
@@ -42,7 +42,53 @@ namespace CompilersProject.Implementations
 
                     colI++;
                     char c = line[colI];
+                    // comment handling
+                    if (multiLineCommentIndex > 0)
+                    {
+                        if (c == '*')
+                        {
+                            if (colI + 1 < line.Length)
+                            {
+                                char next = line[colI + 1];
+                                if (next == '/')
+                                {
 
+                                    multiLineCommentIndex--;
+                                    colI++;
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+
+                    if (c == '/')
+                    {
+                        if (colI + 1 < line.Length)
+                        {
+                            char next = line[colI + 1];
+                            if (next == '/')
+                            {
+                                colI = line.Length;
+                                continue;
+                            }
+                            else if (next == '*')
+                            {
+                                multiLineCommentIndex++;
+                                colI++;
+                                continue;
+                            }
+                            // otherwise continue normally
+                        }
+                        else
+                        {
+                            miniPLExceptionThrower.throwUnExpectedSymbolError(lineI, '/');
+                        }
+                    }
+
+                    if (multiLineCommentIndex > 0)
+                    {
+                        continue;
+                    }
                     if (inString)
                     {
                         token = token + c;
@@ -56,31 +102,27 @@ namespace CompilersProject.Implementations
                         }
                         else if (c == '"')
                         {
-                            tokenList.Add(new Token(token, lineI, colI, "identifier"));
+                            tokenList.Add(new Token(token, lineI, colI, "string"));
                             token = "";
                             inString = false;
                             stringEscaping = false;
                         }
-                        continue;
                     }
-                    if (c == '"')
+                    else if (c == '"')
                     {
                         inString = true;
                         char h = '"';
                         token = $"{h}";
-                        continue;
                     }
-                    if (c == ' ' || c == '\t')
+                    else if (c == ' ' || c == '\t')
                     {
                         if (token != "")
                         {
                             tokenList.Add(new Token(token, lineI, colI, "identifier"));
                             token = "";
                         }
-                        continue;
                     }
-
-                    if (c == '.')
+                    else if (c == '.')
                     {
 
                         if (colI + 1 < line.Length)
@@ -95,7 +137,6 @@ namespace CompilersProject.Implementations
                                 }
                                 tokenList.Add(new Token("..", lineI, colI, "symbol"));
                                 colI = colI + 1;
-                                continue;
                             }
                             else
                             {
@@ -107,8 +148,7 @@ namespace CompilersProject.Implementations
                             miniPLExceptionThrower.throwUnExpectedSymbolError(lineI, '.');
                         }
                     }
-
-                    if (miniPLHelper.isSymbol(c))
+                    else if (miniPLHelper.isSymbol(c))
                     {
                         if (token != "")
                         {
@@ -145,6 +185,7 @@ namespace CompilersProject.Implementations
             while (i < tokenList.Count)
             {
                 Token t = tokenList[i];
+                Console.WriteLine(t.value);
                 if (miniPLHelper.isReservedKeyword(t.value))
                 {
                     Token newToken = new Token(t.value, t.row, t.column, "keyword");

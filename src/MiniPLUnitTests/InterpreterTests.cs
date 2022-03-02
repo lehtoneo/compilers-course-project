@@ -91,6 +91,42 @@ namespace MiniPLUnitTests
 
         }
 
+        [TestMethod]
+        public void TestProgram3WithComments()
+        {
+            var mockConsoleIO = new Mock<IConsoleIO>();
+            var number = "9";
+            mockConsoleIO.Setup(t => t.ReadLine()).Returns(number);
+
+            SimpleCommentRemover scr = new SimpleCommentRemover();
+            MiniPLScanner scanner = new MiniPLScanner(scr);
+            MiniPLParser mPLP = new MiniPLParser();
+
+            string[] program3 = new string[] {
+            "print \"Give a number\";",
+            "var n : int; /*",
+            "print \"Give a number\";",
+            "var n : int; */",
+            "read n;",
+            "var v : int := 1;",
+            "var i : int;",
+            "for i in 1..n do",
+            "   v:= v * i; // moi",
+            "end for;",
+            "print \"The result is: \";",
+            "print v;"
+        };
+
+            var interpreter = new Interpreter(scanner, mPLP, mockConsoleIO.Object);
+
+            interpreter.interpret(program3);
+
+            mockConsoleIO.Verify(t => t.Write("Give a number"), Times.Once());
+            mockConsoleIO.Verify(t => t.Write("The result is: "), Times.Once());
+            mockConsoleIO.Verify(t => t.Write("362880"), Times.AtLeastOnce());
+
+        }
+
 
     }
 }
