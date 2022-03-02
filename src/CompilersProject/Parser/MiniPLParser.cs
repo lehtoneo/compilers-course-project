@@ -329,7 +329,9 @@ namespace CompilersProject.Implementations
         public void identAssignment(Node<String> parent, List<Token> tokens)
         {
             Token ident = tokens[0];
+            identifierCheck(ident);
             string identifier = ident.value;
+
             Node<string> assignmentNode = new Node<string>("assignment");
 
             parent.children.Add(assignmentNode);
@@ -438,7 +440,7 @@ namespace CompilersProject.Implementations
             else
             {
                 Token varIdent = tokens[1];
-                this.identifierCheck(varIdent);
+
                 ParserIdentifier pI = this.identifiers.GetValueOrDefault(varIdent.value, new ParserIdentifier("undefined", -1));
 
                 readNode.children.Add(new Node<string>(varIdent.value));
@@ -710,7 +712,7 @@ namespace CompilersProject.Implementations
             if (miniPLHelper.isReservedKeyword(value))
             {
                 miniPLExceptionThrower
-                    .throwMiniPLException($"Invalid identifier: invalid usage of keyword '{value}' as identifier");
+                    .throwMiniPLException($"Invalid identifier: invalid usage of keyword '{value}' as identifier at row {t.row}");
             }
 
             char firstChar = value[0];

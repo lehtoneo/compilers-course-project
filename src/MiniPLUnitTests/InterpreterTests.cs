@@ -11,8 +11,8 @@ namespace MiniPLUnitTests
         public void TestProgram1()
         {
             var mockConsoleIO = new Mock<IConsoleIO>();
-            SimpleCommentRemover scr = new SimpleCommentRemover();
-            MiniPLScanner scanner = new MiniPLScanner(scr);
+
+            MiniPLScanner scanner = new MiniPLScanner();
             MiniPLParser mPLP = new MiniPLParser();
 
             string[] program1 = new string[] { "var X : int := 4 + (6 * 2);", "print X;" };
@@ -32,8 +32,7 @@ namespace MiniPLUnitTests
             var times = "2";
             mockConsoleIO.Setup(t => t.ReadLine()).Returns(times);
 
-            SimpleCommentRemover scr = new SimpleCommentRemover();
-            MiniPLScanner scanner = new MiniPLScanner(scr);
+            MiniPLScanner scanner = new MiniPLScanner();
             MiniPLParser mPLP = new MiniPLParser();
 
             string[] program3 = new string[] {
@@ -64,8 +63,7 @@ namespace MiniPLUnitTests
             var number = "9";
             mockConsoleIO.Setup(t => t.ReadLine()).Returns(number);
 
-            SimpleCommentRemover scr = new SimpleCommentRemover();
-            MiniPLScanner scanner = new MiniPLScanner(scr);
+            MiniPLScanner scanner = new MiniPLScanner();
             MiniPLParser mPLP = new MiniPLParser();
 
             string[] program3 = new string[] {
@@ -98,8 +96,7 @@ namespace MiniPLUnitTests
             var number = "9";
             mockConsoleIO.Setup(t => t.ReadLine()).Returns(number);
 
-            SimpleCommentRemover scr = new SimpleCommentRemover();
-            MiniPLScanner scanner = new MiniPLScanner(scr);
+            MiniPLScanner scanner = new MiniPLScanner();
             MiniPLParser mPLP = new MiniPLParser();
 
             string[] program3 = new string[] {

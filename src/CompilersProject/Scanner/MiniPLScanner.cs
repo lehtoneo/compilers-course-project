@@ -12,7 +12,7 @@ namespace CompilersProject.Implementations
     {
         public MiniPLHelper miniPLHelper;
         public MiniPLExceptionThrower miniPLExceptionThrower;
-        public MiniPLScanner(ICommentRemover commentRemover) : base(commentRemover)
+        public MiniPLScanner()
         {
             this.miniPLExceptionThrower = new MiniPLExceptionThrower("Scanner");
             this.miniPLHelper = new MiniPLHelper(miniPLExceptionThrower);
@@ -20,14 +20,13 @@ namespace CompilersProject.Implementations
 
         public override List<Token> scan(string[] program)
         {
-            string[] commentsRemoved = program;
 
             List<Token> tokenList = new List<Token>();
             int lineI = 0;
             bool inString = false;
             bool stringEscaping = false;
             int multiLineCommentIndex = 0;
-            foreach (string line in commentsRemoved)
+            foreach (string line in program)
             {
                 lineI++;
                 string token = "";
@@ -185,7 +184,7 @@ namespace CompilersProject.Implementations
             while (i < tokenList.Count)
             {
                 Token t = tokenList[i];
-                Console.WriteLine(t.value);
+
                 if (miniPLHelper.isReservedKeyword(t.value))
                 {
                     Token newToken = new Token(t.value, t.row, t.column, "keyword");

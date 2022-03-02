@@ -10,10 +10,9 @@ namespace CompilersProject
 
             string[] program = miniPLInput.readMiniPLProgram();
 
+            ;
 
-            SimpleCommentRemover simpleCommentRemover = new SimpleCommentRemover();
-
-            MiniPLScanner scanner = new MiniPLScanner(simpleCommentRemover);
+            MiniPLScanner scanner = new MiniPLScanner();
             MiniPLParser parser = new MiniPLParser();
             Interpreter interpreter = new Interpreter(scanner, parser);
 

@@ -8,13 +8,11 @@ namespace CompilersProject.Abstracts
 {
     public abstract class AScanner : IScanner
     {
-        public ICommentRemover commentRemover;
-        public AScanner(ICommentRemover commentRemover)
+        public AScanner()
         {
-            this.commentRemover = commentRemover;
         }
 
-        
+
         public abstract List<Token> scan(string[] program);
     }
 }
