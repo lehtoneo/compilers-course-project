@@ -12,8 +12,6 @@ namespace MiniPLInterpreter
             {
                 string[] program = miniPLInput.readMiniPLProgram();
 
-
-
                 MiniPLScanner scanner = new MiniPLScanner();
                 MiniPLParser parser = new MiniPLParser();
                 Interpreter interpreter = new Interpreter(scanner, parser);
