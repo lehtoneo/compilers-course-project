@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CompilersProject.Exceptions
+namespace MiniPLInterpreter.Exceptions
 {
     public class MiniPLExceptionThrower
     {

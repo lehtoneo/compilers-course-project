@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using CompilersProject.Interfaces;
+using MiniPLInterpreter.Interfaces;
 
 namespace MiniPLUnitTests
 {

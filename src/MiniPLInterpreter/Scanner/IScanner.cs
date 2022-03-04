@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using CompilersProject.Implementations;
+using MiniPLInterpreter.Implementations;
 
-namespace CompilersProject.Interfaces
+namespace MiniPLInterpreter.Interfaces
 {
     public interface IScanner
     {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CompilersProject.Implementations
+namespace MiniPLInterpreter.Implementations
 {
     public class Token
     {

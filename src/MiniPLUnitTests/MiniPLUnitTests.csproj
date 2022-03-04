@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CompilersProject\CompilersProject.csproj" />
+    <ProjectReference Include="..\MiniPLInterpreter\MiniPLInterpreter.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using CompilersProject.Implementations;
-using CompilersProject.Interfaces;
+using MiniPLInterpreter.Implementations;
+using MiniPLInterpreter.Interfaces;
 using Moq;
 namespace MiniPLUnitTests
 {

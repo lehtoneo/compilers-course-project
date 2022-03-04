@@ -1,7 +1,7 @@
 ﻿using System;
-using CompilersProject.Exceptions;
-using CompilersProject.Utils;
-namespace CompilersProject
+using MiniPLInterpreter.Exceptions;
+using MiniPLInterpreter.Utils;
+namespace MiniPLInterpreter
 {
     public class Operand
     {

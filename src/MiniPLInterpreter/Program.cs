@@ -1,6 +1,6 @@
-﻿using CompilersProject.Implementations;
+﻿using MiniPLInterpreter.Implementations;
 
-namespace CompilersProject
+namespace MiniPLInterpreter
 {
     class Program
     {

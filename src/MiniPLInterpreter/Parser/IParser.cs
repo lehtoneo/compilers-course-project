@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using CompilersProject.Implementations;
-namespace CompilersProject.Interfaces
+using MiniPLInterpreter.Implementations;
+namespace MiniPLInterpreter.Interfaces
 {
     public interface IParser
     {

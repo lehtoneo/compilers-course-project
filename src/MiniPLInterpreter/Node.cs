@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CompilersProject
+namespace MiniPLInterpreter
 {
     public class Node<T>
     {

@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using CompilersProject.Utils;
-using CompilersProject.Interfaces;
-using CompilersProject.Exceptions;
+using MiniPLInterpreter.Utils;
+using MiniPLInterpreter.Interfaces;
+using MiniPLInterpreter.Exceptions;
 
-namespace CompilersProject.Implementations
+namespace MiniPLInterpreter.Implementations
 {
     public class MiniPLParser : IParser
     {

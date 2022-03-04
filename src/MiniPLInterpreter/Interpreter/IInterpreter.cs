@@ -1,4 +1,4 @@
-﻿namespace CompilersProject.Interfaces
+﻿namespace MiniPLInterpreter.Interfaces
 {
     public interface IInterpreter
     {

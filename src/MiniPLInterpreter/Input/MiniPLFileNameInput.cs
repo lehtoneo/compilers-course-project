@@ -1,8 +1,8 @@
 ﻿using System;
 using System.IO;
-using CompilersProject.Interfaces;
+using MiniPLInterpreter.Interfaces;
 
-namespace CompilersProject.Implementations
+namespace MiniPLInterpreter.Implementations
 {
     class MiniPLFileNameInput : IInput
     {

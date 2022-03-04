@@ -1,9 +1,9 @@
 ﻿using System;
-using CompilersProject.Interfaces;
-using CompilersProject.Exceptions;
+using MiniPLInterpreter.Interfaces;
+using MiniPLInterpreter.Exceptions;
 using System.Collections.Generic;
-using CompilersProject.Utils;
-namespace CompilersProject.Implementations
+using MiniPLInterpreter.Utils;
+namespace MiniPLInterpreter.Implementations
 {
     public class Interpreter : IInterpreter
     {

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using CompilersProject.Exceptions;
-using CompilersProject.Implementations;
-namespace CompilersProject.Utils
+using MiniPLInterpreter.Exceptions;
+using MiniPLInterpreter.Implementations;
+namespace MiniPLInterpreter.Utils
 {
     public class MiniPLHelper
     {

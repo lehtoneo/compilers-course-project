@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using CompilersProject.Implementations;
-using CompilersProject.Interfaces;
+using MiniPLInterpreter.Implementations;
+using MiniPLInterpreter.Interfaces;
 
-namespace CompilersProject.Abstracts
+namespace MiniPLInterpreter.Abstracts
 {
     public abstract class AScanner : IScanner
     {
