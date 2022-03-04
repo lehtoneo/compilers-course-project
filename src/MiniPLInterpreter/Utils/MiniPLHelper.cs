@@ -44,6 +44,7 @@ namespace MiniPLInterpreter.Utils
             return this.symbolDict.GetValueOrDefault(c, false);
         }
 
+
         public bool isReservedKeyword(string s)
         {
             return this.reservedKeywords.GetValueOrDefault(s, false);

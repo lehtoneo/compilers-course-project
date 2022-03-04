@@ -51,11 +51,22 @@ namespace MiniPLInterpreter.Implementations
 
                 this.identifiers = new Dictionary<string, Operand>();
 
-                List<Token> tokens = Scanner.scan(miniPlProgram);
+                ScannerResult scannerResult = Scanner.scan(miniPlProgram);
 
-                Node<String> ast = Parser.parse(tokens);
+                if (scannerResult.Errors.Count > 0)
+                {
+                    Console.WriteLine("Syntax errors:");
+                    scannerResult.Errors.ForEach(error =>
+                    {
+                        Console.WriteLine(error);
+                    });
+                    return;
+                }
+                Node<String> ast = Parser.parse(scannerResult.Tokens);
                 consoleIO.WriteLine("AST:");
                 ast.PrintPretty("", true);
+
+
 
                 consoleIO.WriteLine("Program: ");
 

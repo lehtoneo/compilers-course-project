@@ -13,6 +13,6 @@ namespace MiniPLInterpreter.Abstracts
         }
 
 
-        public abstract List<Token> scan(string[] program);
+        public abstract ScannerResult scan(string[] program);
     }
 }

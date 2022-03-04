@@ -7,6 +7,6 @@ namespace MiniPLInterpreter.Interfaces
 {
     public interface IScanner
     {
-        public List<Token> scan(string[] program);
+        public ScannerResult scan(string[] program);
     }
 }

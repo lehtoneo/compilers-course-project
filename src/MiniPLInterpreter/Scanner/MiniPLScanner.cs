@@ -12,13 +12,24 @@ namespace MiniPLInterpreter.Implementations
     {
         public MiniPLHelper miniPLHelper;
         public MiniPLExceptionThrower miniPLExceptionThrower;
+        public Dictionary<char, bool> validCharDict;
         public MiniPLScanner()
         {
-            this.miniPLExceptionThrower = new MiniPLExceptionThrower("Scanner");
             this.miniPLHelper = new MiniPLHelper(miniPLExceptionThrower);
+            this.validCharDict = new Dictionary<char, bool>();
+
+            foreach (char c in miniPLHelper.symbolDict.Keys)
+            {
+                validCharDict.Add(c, true);
+            }
+            List<char> otherValidCharacters = new List<char>() { ' ', '\t', '_', '\\', '.' };
+            foreach (char c in otherValidCharacters)
+            {
+                validCharDict.Add(c, true);
+            }
         }
 
-        public override List<Token> scan(string[] program)
+        public override ScannerResult scan(string[] program)
         {
 
             List<Token> tokenList = new List<Token>();
@@ -26,6 +37,7 @@ namespace MiniPLInterpreter.Implementations
             bool inString = false;
             bool stringEscaping = false;
             int multiLineCommentIndex = 0;
+            List<string> errors = new List<String>();
             foreach (string line in program)
             {
                 lineI++;
@@ -42,6 +54,9 @@ namespace MiniPLInterpreter.Implementations
                     colI++;
                     char c = line[colI];
                     // comment handling
+
+
+
                     if (multiLineCommentIndex > 0)
                     {
                         if (c == '*')
@@ -80,7 +95,8 @@ namespace MiniPLInterpreter.Implementations
                         }
                         else
                         {
-                            miniPLExceptionThrower.throwUnExpectedSymbolError(lineI, '/');
+                            errors.Add($"Invalid char null at row {line} col {colI + 1}.");
+                            continue;
                         }
                     }
 
@@ -113,6 +129,10 @@ namespace MiniPLInterpreter.Implementations
                         char h = '"';
                         token = $"{h}";
                     }
+                    else if (!isValidCharacter(c))
+                    {
+                        errors.Add($"Invalid char {c} at row {line} col {colI}.");
+                    }
                     else if (c == ' ' || c == '\t')
                     {
                         if (token != "")
@@ -120,6 +140,7 @@ namespace MiniPLInterpreter.Implementations
                             tokenList.Add(new Token(token, lineI, colI, "identifier"));
                             token = "";
                         }
+                        continue;
                     }
                     else if (c == '.')
                     {
@@ -139,12 +160,12 @@ namespace MiniPLInterpreter.Implementations
                             }
                             else
                             {
-                                miniPLExceptionThrower.throwUnExpectedSymbolError(lineI, '.');
+                                errors.Add($"Invalid char {c} at row {line} col {colI + 1}.");
                             }
                         }
                         else
                         {
-                            miniPLExceptionThrower.throwUnExpectedSymbolError(lineI, '.');
+                            errors.Add($"Invalid char {c} at row {line} col {colI + 1}.");
                         }
                     }
                     else if (miniPLHelper.isSymbol(c))
@@ -194,8 +215,17 @@ namespace MiniPLInterpreter.Implementations
             }
 
 
-            return tokenList;
+            return new ScannerResult(tokenList, errors);
+        }
+
+        private bool isValidCharacter(char c)
+        {
+
+
+            return validCharDict.GetValueOrDefault(c, false) || Char.IsLetterOrDigit(c);
         }
 
     }
+
+
 }
