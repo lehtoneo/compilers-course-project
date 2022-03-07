@@ -662,7 +662,7 @@ namespace MiniPLInterpreter.Implementations
             {
                 if (tokens.Count != 1)
                 {
-                    miniPLExceptionThrower.throwMiniPLException($"Invalid operand at row {first.row}");
+                    miniPLExceptionThrower.throwMiniPLException($"Invalid operand at row {first.row} near '{first.value}'");
                 }
 
                 string value = first.value;
