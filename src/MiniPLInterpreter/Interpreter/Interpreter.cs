@@ -184,7 +184,7 @@ namespace MiniPLInterpreter.Implementations
                 while (true)
                 {
                     Node<string> statementNode = node.children[stmtI];
-                    if (statementNode.value == "$$")
+                    if (statementNode.value == "end")
                     {
                         break;
                     }
@@ -272,10 +272,12 @@ namespace MiniPLInterpreter.Implementations
                     }
                 }
             }
-            else
             {
-                string idOrType = value.Split('(')[0];
-                string operandValue = value.Split('(')[1].Split(')')[0];
+                string usedValue = value;
+
+
+                string idOrType = usedValue.Split('(')[0];
+                string operandValue = usedValue.Split('(')[1].Split(')')[0];
                 if (idOrType == "id")
                 {
                     return this.identifiers.GetValueOrDefault(operandValue);

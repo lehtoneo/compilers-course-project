@@ -214,6 +214,8 @@ namespace MiniPLInterpreter.Implementations
                 i++;
             }
 
+            tokenList.Add(new Token("EOF", lineI + 1, 0, "EOF"));
+
 
             return new ScannerResult(tokenList, errors);
         }
