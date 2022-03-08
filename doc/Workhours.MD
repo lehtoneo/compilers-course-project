@@ -13,3 +13,5 @@
 | 2.3.2022  | 4 | Remove commentremover and implement it better at scanne |
 | 2.3.2022  | 3 | Create ast at parser and print it out |
 | 4.3.2022  | 4 | Write documentation and refactor |
+| 7.3.2022  | 3 | Docs and refactor parser |
+| 8.3.2022  | 2 | LL(1) grammar and implementation to parser |
