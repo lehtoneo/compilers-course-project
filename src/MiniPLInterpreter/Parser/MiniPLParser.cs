@@ -357,50 +357,70 @@ namespace MiniPLInterpreter.Implementations
                 Node<string> operatorNode = new Node<string>("___");
                 parent.children.Add(operatorNode);
                 string firstOperandType = Operand(operatorNode);
-                Console.WriteLine($"Curr {CurrentToken().value}");
-                if (CurrentToken().value == ";" || CurrentToken().value == ".." || CurrentToken().value == "do")
+                Token currentToken = CurrentToken();
+                if (miniPLHelper.isOperator(currentToken.value) && currentToken.value != "!")
                 {
+                    operatorNode.value = currentToken.value;
+                    string finalType = expr_tail(operatorNode, parent, firstOperandType);
+                    return finalType;
+                }
 
+                else
+                {
                     parent.children.RemoveAt(parent.children.Count - 1);
                     foreach (Node<string> child in operatorNode.children)
                     {
                         parent.children.Add(child);
                     }
+
                     return firstOperandType;
-                }
-
-                else
-                {
-                    Token operatorToken = CurrentToken();
-                    string op = operatorToken.value;
-                    operatorNode.value = op;
-
-                    NextToken();
-                    if (!miniPLHelper.isValidOperatorForType(op, firstOperandType))
-                    {
-                        miniPLExceptionThrower.throwInvalidOperatorError(operatorToken.row, op, firstOperandType);
-                    }
-
-
-                    string secondOperandType = Operand(operatorNode);
-                    if (firstOperandType != secondOperandType)
-                    {
-                        miniPLExceptionThrower.throwInvalidExpressionError(operatorToken.row, firstOperandType, secondOperandType);
-                    }
-
-                    if (op == "+")
-                    {
-                        return firstOperandType;
-                    }
-                    else
-                    {
-                        return miniPLHelper.getReturnTypeFromOperator(op);
-                    }
 
 
                 }
             }
 
+
+
+        }
+
+        public string expr_tail(Node<String> operatorNode, Node<String> parentNode, string previousType)
+        {
+            Token operatorToken = CurrentToken();
+            string op = operatorToken.value;
+            Console.WriteLine("OP " + op);
+
+            if (!miniPLHelper.isValidOperatorForType(op, previousType))
+            {
+                miniPLExceptionThrower.throwInvalidOperatorError(operatorToken.row, op, previousType);
+            }
+
+            NextToken();
+
+            Token currentToken = CurrentToken();
+            string type = Operand(operatorNode);
+
+            if (type != previousType)
+            {
+                miniPLExceptionThrower.throwInvalidExpressionError(currentToken.row, previousType, type);
+            }
+
+            if (miniPLHelper.isOperator(currentToken.value))
+            {
+                Node<string> newOperatorNode = new Node<string>(currentToken.value);
+                parentNode.children.Add(newOperatorNode);
+                expr_tail(newOperatorNode, operatorNode, type);
+            }
+
+            if (op == "+")
+            {
+                return previousType;
+            }
+            else
+            {
+                Console.WriteLine("HERE");
+                Console.WriteLine(miniPLHelper.getReturnTypeFromOperator(op));
+                return miniPLHelper.getReturnTypeFromOperator(op);
+            }
 
 
         }
@@ -415,12 +435,10 @@ namespace MiniPLInterpreter.Implementations
             {
                 NextToken();
                 string type = expr(operandNode);
-                // ")" not found
                 Token rightParenth = CurrentToken();
                 miniPLHelper.checkTokenThrowsMiniPLError(rightParenth, ")");
                 NextToken();
                 return type;
-
             }
             else
             {
