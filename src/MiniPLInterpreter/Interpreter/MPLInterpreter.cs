@@ -12,14 +12,14 @@ namespace MiniPLInterpreter.Interpreter
         private IScanner Scanner;
         private IParser Parser;
         private Dictionary<string, Operand> identifiers;
-        private MiniPLHelper MiniPLHelper;
+
         private MiniPLExceptionThrower miniPLExceptionThrower = new MiniPLExceptionThrower("Runtime");
+        private MiniPLHelper MiniPLHelper = new MiniPLHelper(new MiniPLExceptionThrower("Runtime"));
         private IConsoleIO consoleIO = new ConsoleIO();
 
 
         public MPLInterpreter()
         {
-            this.MiniPLHelper = new MiniPLHelper(miniPLExceptionThrower);
             this.Scanner = new MiniPLScanner();
             this.Parser = new MiniPLParser();
 

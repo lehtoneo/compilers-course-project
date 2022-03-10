@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using MiniPLInterpreter.Implementations;
-
-namespace MiniPLInterpreter.Interfaces
+﻿namespace MiniPLInterpreter.Scanner
 {
     public interface IScanner
     {
