@@ -1,7 +1,7 @@
 ﻿using System;
 using MiniPLInterpreter.Exceptions;
 using MiniPLInterpreter.Utils;
-namespace MiniPLInterpreter
+namespace MiniPLInterpreter.Interpreter
 {
     public class Operand
     {

@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace MiniPLInterpreter.Implementations
+namespace MiniPLInterpreter
 {
+
     public class Token
     {
         public string value { get; set; }

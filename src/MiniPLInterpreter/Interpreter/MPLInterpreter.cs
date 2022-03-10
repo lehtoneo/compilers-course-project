@@ -4,9 +4,10 @@ using MiniPLInterpreter.Exceptions;
 using System.Collections.Generic;
 using MiniPLInterpreter.Utils;
 using MiniPLInterpreter.Parser;
-namespace MiniPLInterpreter.Implementations
+using MiniPLInterpreter.Scanner;
+namespace MiniPLInterpreter.Interpreter
 {
-    public class Interpreter : IInterpreter
+    public class MPLInterpreter : IInterpreter
     {
         private IScanner Scanner;
         private IParser Parser;
@@ -16,19 +17,29 @@ namespace MiniPLInterpreter.Implementations
         private IConsoleIO consoleIO = new ConsoleIO();
 
 
-        public Interpreter(IScanner scanner, IParser parser)
+        public MPLInterpreter()
         {
             this.MiniPLHelper = new MiniPLHelper(miniPLExceptionThrower);
-            this.Scanner = scanner;
-            this.Parser = parser;
-        }
+            this.Scanner = new MiniPLScanner();
+            this.Parser = new MiniPLParser();
 
-        public Interpreter(IScanner scanner, IParser parser, IConsoleIO consoleIO) : this(scanner, parser)
+        }
+        public MPLInterpreter(IConsoleIO consoleIO) : this()
         {
             this.consoleIO = consoleIO;
         }
 
+        public MPLInterpreter(IScanner scanner, IParser parser)
+        {
+            this.Scanner = scanner;
+            this.Parser = parser;
+        }
 
+        public MPLInterpreter(IScanner scanner, IParser parser, IConsoleIO consoleIO) : this(consoleIO)
+        {
+            this.Scanner = scanner;
+            this.Parser = parser;
+        }
 
         public void printNode(Node<string> node)
         {

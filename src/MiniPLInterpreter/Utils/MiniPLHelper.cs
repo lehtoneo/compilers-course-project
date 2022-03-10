@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using MiniPLInterpreter.Exceptions;
-using MiniPLInterpreter.Implementations;
+
 namespace MiniPLInterpreter.Utils
 {
     public class MiniPLHelper
     {
         public Dictionary<char, bool> operatorDict { get; set; }
-        public Dictionary<char, bool> symbolDict { get; set; }
+        public Dictionary<char, bool> oneCharTokens { get; set; }
         public Dictionary<string, bool> reservedKeywords { get; set; }
         public MiniPLExceptionThrower miniPLExceptionThrower = new MiniPLExceptionThrower();
         public MiniPLHelper(MiniPLExceptionThrower miniPLExceptionThrower)
@@ -16,11 +15,11 @@ namespace MiniPLInterpreter.Utils
             this.miniPLExceptionThrower = miniPLExceptionThrower;
 
             char[] miniPLOperators = new[] { '+', '-', '*', '/', '<', '=', '&', '!' };
-            char[] otherSymbols = new[] { ';', ':', '(', ')' };
+            char[] otherOneCharTokens = new[] { ';', ':', '(', ')' };
 
             string[] reservedKeywords = new[] { "var", "for", "end", "in", "do", "read", "print", "int", "string", "bool", "assert" };
 
-            this.symbolDict = new Dictionary<char, bool>();
+            this.oneCharTokens = new Dictionary<char, bool>();
             this.reservedKeywords = new Dictionary<string, bool>();
             this.operatorDict = new Dictionary<char, bool>();
             foreach (string rkw in reservedKeywords)
@@ -30,18 +29,18 @@ namespace MiniPLInterpreter.Utils
             foreach (char c in miniPLOperators)
             {
                 this.operatorDict.Add(c, true);
-                this.symbolDict.Add(c, true);
+                this.oneCharTokens.Add(c, true);
             }
-            foreach (char c in otherSymbols)
+            foreach (char c in otherOneCharTokens)
             {
-                this.symbolDict.Add(c, true);
+                this.oneCharTokens.Add(c, true);
             }
 
         }
 
-        public bool isSymbol(char c)
+        public bool isOneCharToken(char c)
         {
-            return this.symbolDict.GetValueOrDefault(c, false);
+            return this.oneCharTokens.GetValueOrDefault(c, false);
         }
 
 

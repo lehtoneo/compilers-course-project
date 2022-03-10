@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using MiniPLInterpreter.Implementations;
+﻿using System.Collections.Generic;
+
 namespace MiniPLInterpreter.Parser
 {
     public interface IParser

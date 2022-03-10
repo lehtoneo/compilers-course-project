@@ -1,7 +1,8 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MiniPLInterpreter.Implementations;
+using MiniPLInterpreter.Scanner;
 using MiniPLInterpreter.Parser;
 using MiniPLInterpreter.Interfaces;
+using MiniPLInterpreter.Interpreter;
 using Moq;
 namespace MiniPLUnitTests
 {
@@ -18,7 +19,7 @@ namespace MiniPLUnitTests
 
             string[] program1 = new string[] { "var X : int := 4 + (6 * 2);", "print X;" };
 
-            var interpreter = new Interpreter(scanner, mPLP, mockConsoleIO.Object);
+            var interpreter = new MPLInterpreter(mockConsoleIO.Object);
 
             interpreter.interpret(program1);
 
@@ -47,7 +48,7 @@ namespace MiniPLUnitTests
             "end for;",
             "assert(x = nTimes); " };
 
-            var interpreter = new Interpreter(scanner, mPLP, mockConsoleIO.Object);
+            var interpreter = new MPLInterpreter(scanner, mPLP, mockConsoleIO.Object);
 
             interpreter.interpret(program3);
             mockConsoleIO.Verify(t => t.Write("How many times?"), Times.Once());
@@ -81,7 +82,7 @@ namespace MiniPLUnitTests
             "print v;"
         };
 
-            var interpreter = new Interpreter(scanner, mPLP, mockConsoleIO.Object);
+            var interpreter = new MPLInterpreter(scanner, mPLP, mockConsoleIO.Object);
 
             interpreter.interpret(program3);
 
@@ -116,7 +117,7 @@ namespace MiniPLUnitTests
             "print v;"
         };
 
-            var interpreter = new Interpreter(scanner, mPLP, mockConsoleIO.Object);
+            var interpreter = new MPLInterpreter(scanner, mPLP, mockConsoleIO.Object);
 
             interpreter.interpret(program3);
 
@@ -149,7 +150,7 @@ namespace MiniPLUnitTests
             "sdjijasdjiasd(x = _nTimes);"
         };
 
-            var interpreter = new Interpreter(scanner, mPLP, mockConsoleIO.Object);
+            var interpreter = new MPLInterpreter(scanner, mPLP, mockConsoleIO.Object);
 
             interpreter.interpret(program3);
 
@@ -181,7 +182,7 @@ namespace MiniPLUnitTests
             "assert (x = n);"
         };
 
-            var interpreter = new Interpreter(scanner, mPLP, mockConsoleIO.Object);
+            var interpreter = new MPLInterpreter(scanner, mPLP, mockConsoleIO.Object);
 
             interpreter.interpret(program3);
 

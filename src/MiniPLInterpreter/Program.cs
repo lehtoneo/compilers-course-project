@@ -1,5 +1,7 @@
-﻿using MiniPLInterpreter.Implementations;
+﻿using MiniPLInterpreter.Input;
 using MiniPLInterpreter.Parser;
+using MiniPLInterpreter.Interpreter;
+using MiniPLInterpreter.Scanner;
 namespace MiniPLInterpreter
 {
     class Program
@@ -14,7 +16,7 @@ namespace MiniPLInterpreter
 
                 MiniPLScanner scanner = new MiniPLScanner();
                 MiniPLParser parser = new MiniPLParser();
-                Interpreter interpreter = new Interpreter(scanner, parser);
+                MPLInterpreter interpreter = new MPLInterpreter(scanner, parser);
 
                 interpreter.interpret(program);
             }

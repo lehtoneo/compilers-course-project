@@ -2,7 +2,7 @@
 using System.IO;
 using MiniPLInterpreter.Interfaces;
 
-namespace MiniPLInterpreter.Implementations
+namespace MiniPLInterpreter.Input
 {
     class MiniPLFileNameInput : IInput
     {
