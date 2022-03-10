@@ -54,6 +54,7 @@ namespace MiniPLUnitTests
             mockConsoleIO.Verify(t => t.Write("0"), Times.Once());
             mockConsoleIO.Verify(t => t.Write("1"), Times.Once());
             mockConsoleIO.Verify(t => t.Write(" : Hello, World!\n"), Times.AtLeastOnce());
+            mockConsoleIO.Verify(t => t.WriteLine("ASSERT false"), Times.AtLeastOnce());
 
         }
 
@@ -155,6 +156,36 @@ namespace MiniPLUnitTests
             mockConsoleIO.Verify(t => t.WriteLine("Errors:"), Times.Once());
             mockConsoleIO.Verify(t => t.WriteLine("Parser error: Invalid identifier '_nTimes' at row 1"), Times.Once());
             mockConsoleIO.Verify(t => t.WriteLine("Parser error: Undefined variable at row 6, col 14: Variable 'kk' is undefined"), Times.AtLeastOnce());
+
+        }
+
+        [TestMethod]
+        public void TestProgram5WithEmptyForLoop()
+        {
+            var mockConsoleIO = new Mock<IConsoleIO>();
+            var number = "9";
+            mockConsoleIO.Setup(t => t.ReadLine()).Returns(number);
+
+            MiniPLScanner scanner = new MiniPLScanner();
+            MiniPLParser mPLP = new MiniPLParser();
+
+            string[] program3 = new string[] {
+            "var n : int := 0;",
+            "print \"How many times?\";",
+            " ",
+            "read n;",
+            "var x : int;",
+            "for x in 0..n-1 do",
+
+            "end for;",
+            "assert (x = n);"
+        };
+
+            var interpreter = new Interpreter(scanner, mPLP, mockConsoleIO.Object);
+
+            interpreter.interpret(program3);
+
+            mockConsoleIO.Verify(t => t.WriteLine("ASSERT false"), Times.AtLeastOnce());
 
         }
 
