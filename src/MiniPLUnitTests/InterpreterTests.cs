@@ -1,5 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MiniPLInterpreter.Implementations;
+using MiniPLInterpreter.Parser;
 using MiniPLInterpreter.Interfaces;
 using Moq;
 namespace MiniPLUnitTests
@@ -121,6 +122,39 @@ namespace MiniPLUnitTests
             mockConsoleIO.Verify(t => t.Write("Give a number"), Times.Once());
             mockConsoleIO.Verify(t => t.Write("The result is: "), Times.Once());
             mockConsoleIO.Verify(t => t.Write("362880"), Times.AtLeastOnce());
+
+        }
+
+        [TestMethod]
+        public void TestProgram4WithErrors()
+        {
+            var mockConsoleIO = new Mock<IConsoleIO>();
+            var number = "9";
+            mockConsoleIO.Setup(t => t.ReadLine()).Returns(number);
+
+            MiniPLScanner scanner = new MiniPLScanner();
+            MiniPLParser mPLP = new MiniPLParser();
+
+            string[] program3 = new string[] {
+            "var _nTimes : int := 0;",
+            "print \"How many times?\";",
+            " ",
+            "read _nTimes;",
+            "var x : int;",
+            "for x in 0..kk - 1 do",
+            "   print Y;",
+            "   print \" : Hello, World!\n\";",
+            "end for;",
+            "sdjijasdjiasd(x = _nTimes);"
+        };
+
+            var interpreter = new Interpreter(scanner, mPLP, mockConsoleIO.Object);
+
+            interpreter.interpret(program3);
+
+            mockConsoleIO.Verify(t => t.WriteLine("Errors:"), Times.Once());
+            mockConsoleIO.Verify(t => t.WriteLine("Parser error: Invalid identifier '_nTimes' at row 1"), Times.Once());
+            mockConsoleIO.Verify(t => t.WriteLine("Parser error: Undefined variable at row 6, col 14: Variable 'kk' is undefined"), Times.AtLeastOnce());
 
         }
 

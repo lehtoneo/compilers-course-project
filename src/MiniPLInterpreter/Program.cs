@@ -1,5 +1,5 @@
 ﻿using MiniPLInterpreter.Implementations;
-
+using MiniPLInterpreter.Parser;
 namespace MiniPLInterpreter
 {
     class Program

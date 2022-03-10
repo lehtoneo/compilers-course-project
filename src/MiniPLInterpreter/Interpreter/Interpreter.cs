@@ -3,6 +3,7 @@ using MiniPLInterpreter.Interfaces;
 using MiniPLInterpreter.Exceptions;
 using System.Collections.Generic;
 using MiniPLInterpreter.Utils;
+using MiniPLInterpreter.Parser;
 namespace MiniPLInterpreter.Implementations
 {
     public class Interpreter : IInterpreter
@@ -55,14 +56,26 @@ namespace MiniPLInterpreter.Implementations
 
                 if (scannerResult.Errors.Count > 0)
                 {
-                    Console.WriteLine("Syntax errors:");
+                    consoleIO.WriteLine("Scanner errors:");
                     scannerResult.Errors.ForEach(error =>
                     {
-                        Console.WriteLine(error);
+                        consoleIO.WriteLine(error);
                     });
                     return;
                 }
-                Node<String> ast = Parser.parse(scannerResult.Tokens);
+                ParserResult parserResult = Parser.parse(scannerResult.Tokens);
+
+                if (parserResult.Errors.Count > 0)
+                {
+                    consoleIO.WriteLine("Errors:");
+                    parserResult.Errors.ForEach(error =>
+                    {
+                        consoleIO.WriteLine(error);
+                    });
+                    return;
+                }
+
+                Node<String> ast = parserResult.AST;
                 consoleIO.WriteLine("AST:");
                 ast.PrintPretty("", true);
 
@@ -194,7 +207,7 @@ namespace MiniPLInterpreter.Implementations
                     }
                     stmtI++;
                 }
-                Node<string> statementsNode = node.children[3];
+
                 int firstExpressionValue = getExpressionValue(firstExpressionNode).valueToInt();
                 int secondExpressionValue = getExpressionValue(secondExpressionNode).valueToInt();
 

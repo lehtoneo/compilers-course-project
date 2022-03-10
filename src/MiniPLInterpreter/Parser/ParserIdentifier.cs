@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace MiniPLInterpreter.Implementations
+namespace MiniPLInterpreter.Parser
 {
     public class ParserIdentifier
     {
