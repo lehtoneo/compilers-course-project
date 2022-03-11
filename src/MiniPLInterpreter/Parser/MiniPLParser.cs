@@ -279,7 +279,7 @@ namespace MiniPLInterpreter.Parser
             miniPLHelper.checkTokenThrowsMiniPLError(shouldBeForToken, "for");
             NextToken();
             checkCurrentTokenIsRowsEndOfLine(shouldBeForToken.row);
-            loopNode.children.Add(new Node<string>("for"));
+
             if (forLoopIndex > 0)
             {
                 symbolTable.Remove(forLoopIndex);
