@@ -365,7 +365,6 @@ namespace MiniPLInterpreter.Parser
 
         public void var(Node<String> parent)
         {
-            Token first = CurrentToken();
             Node<String> varAssignmentNode = new Node<string>("var_assignment");
             parent.children.Add(varAssignmentNode);
 
@@ -477,31 +476,7 @@ namespace MiniPLInterpreter.Parser
                 Token currentToken = CurrentToken();
                 if (miniPLHelper.isOperator(currentToken.value))
                 {
-                    Token operatorToken = CurrentToken();
-                    string op = operatorToken.value;
-                    operatorNode.value = op;
-
-                    NextToken();
-                    if (!miniPLHelper.isValidOperatorForType(op, firstOperandType))
-                    {
-                        miniPLExceptionThrower.throwInvalidOperatorError(operatorToken.row, op, firstOperandType);
-                    }
-
-
-                    string secondOperandType = Operand(operatorNode);
-                    if (firstOperandType != secondOperandType)
-                    {
-                        miniPLExceptionThrower.throwInvalidExpressionError(operatorToken.row, firstOperandType, secondOperandType);
-                    }
-
-                    if (op == "+")
-                    {
-                        return firstOperandType;
-                    }
-                    else
-                    {
-                        return miniPLHelper.getReturnTypeFromOperator(op);
-                    }
+                    return expr_tail(operatorNode, firstOperandType);
                 }
 
                 else
@@ -520,6 +495,35 @@ namespace MiniPLInterpreter.Parser
 
 
 
+        }
+
+        public string expr_tail(Node<string> operatorNode, string expectedType)
+        {
+            Token operatorToken = CurrentToken();
+            string op = operatorToken.value;
+            operatorNode.value = op;
+
+            NextToken();
+            if (!miniPLHelper.isValidOperatorForType(op, expectedType))
+            {
+                miniPLExceptionThrower.throwInvalidOperatorError(operatorToken.row, op, expectedType);
+            }
+
+
+            string secondOperandType = Operand(operatorNode);
+            if (expectedType != secondOperandType)
+            {
+                miniPLExceptionThrower.throwInvalidExpressionError(operatorToken.row, expectedType, secondOperandType);
+            }
+
+            if (op == "+")
+            {
+                return expectedType;
+            }
+            else
+            {
+                return miniPLHelper.getReturnTypeFromOperator(op);
+            }
         }
 
         public string unary_expr(Node<string> parent)
