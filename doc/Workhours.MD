@@ -17,3 +17,4 @@
 | 8.3.2022  | 2 | LL(1) grammar and implementation to parser |
 | 10.3.2022 | 4 | Write documentation, try to make the project more clear |
 | 11.3.2022 | 8 | Finalize the documentation, final implementations |
+
