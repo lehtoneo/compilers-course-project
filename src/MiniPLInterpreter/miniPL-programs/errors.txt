@@ -3,7 +3,7 @@ print "How many times?";
 
 read _nTimes;
 var x : int;
-for x in 0..kk-1 do
+for x in 0.._nTimes-1 do
 	print Y;
 	print " : Hello, World!\n";
 end for;

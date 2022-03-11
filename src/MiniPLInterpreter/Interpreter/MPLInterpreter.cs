@@ -11,34 +11,25 @@ namespace MiniPLInterpreter.Interpreter
     {
         private IScanner Scanner;
         private IParser Parser;
-        private Dictionary<string, Operand> identifiers;
+        private Dictionary<string, Operand> Identifiers;
 
-        private MiniPLExceptionThrower miniPLExceptionThrower = new MiniPLExceptionThrower("Runtime");
-        private MiniPLHelper MiniPLHelper = new MiniPLHelper(new MiniPLExceptionThrower("Runtime"));
+        private MiniPLExceptionThrower MiniPLExceptionThrower;
+        private MiniPLHelper MiniPLHelper;
         private IConsoleIO consoleIO = new ConsoleIO();
-
-
-        public MPLInterpreter()
-        {
-            this.Scanner = new MiniPLScanner();
-            this.Parser = new MiniPLParser();
-
-        }
-        public MPLInterpreter(IConsoleIO consoleIO) : this()
-        {
-            this.consoleIO = consoleIO;
-        }
 
         public MPLInterpreter(IScanner scanner, IParser parser)
         {
             this.Scanner = scanner;
             this.Parser = parser;
+            this.Identifiers = new Dictionary<string, Operand>();
+            this.MiniPLExceptionThrower = new MiniPLExceptionThrower("Runtime");
+            this.MiniPLHelper = new MiniPLHelper(new MiniPLExceptionThrower("Runtime"));
         }
 
-        public MPLInterpreter(IScanner scanner, IParser parser, IConsoleIO consoleIO) : this(consoleIO)
+        public MPLInterpreter(IScanner scanner, IParser parser, IConsoleIO consoleIO) : this(scanner, parser)
+
         {
-            this.Scanner = scanner;
-            this.Parser = parser;
+            this.consoleIO = consoleIO;
         }
 
         public void printNode(Node<string> node)
@@ -57,58 +48,56 @@ namespace MiniPLInterpreter.Interpreter
 
         public void interpret(string[] miniPlProgram)
         {
+            ScannerResult scannerResult = Scanner.scan(miniPlProgram);
 
+            if (scannerResult.Errors.Count > 0)
+            {
+                consoleIO.WriteLine("Scanner errors:");
+                scannerResult.Errors.ForEach(error =>
+                {
+                    consoleIO.WriteLine(error);
+                });
+                return;
+            }
+            ParserResult parserResult = Parser.parse(scannerResult.Tokens);
+
+            if (parserResult.hasErrors)
+            {
+                consoleIO.WriteLine("Errors:");
+                parserResult.Errors.ForEach(error =>
+                {
+                    consoleIO.WriteLine(error);
+                });
+                return;
+            }
+
+            Node<String> ast = parserResult.AST;
+            consoleIO.WriteLine("AST:");
+            ast.PrintPretty("", true);
+
+            // try to interpret, catch MiniPLExceptions
             try
             {
-
-                this.identifiers = new Dictionary<string, Operand>();
-
-                ScannerResult scannerResult = Scanner.scan(miniPlProgram);
-
-                if (scannerResult.Errors.Count > 0)
-                {
-                    consoleIO.WriteLine("Scanner errors:");
-                    scannerResult.Errors.ForEach(error =>
-                    {
-                        consoleIO.WriteLine(error);
-                    });
-                    return;
-                }
-                ParserResult parserResult = Parser.parse(scannerResult.Tokens);
-
-                if (parserResult.Errors.Count > 0)
-                {
-                    consoleIO.WriteLine("Errors:");
-                    parserResult.Errors.ForEach(error =>
-                    {
-                        consoleIO.WriteLine(error);
-                    });
-                    return;
-                }
-
-                Node<String> ast = parserResult.AST;
-                consoleIO.WriteLine("AST:");
-                ast.PrintPretty("", true);
-
-
-
                 consoleIO.WriteLine("Program: ");
 
                 consoleIO.WriteLine("------------");
 
-                interpret(ast);
+                interpretAST(ast);
                 consoleIO.WriteLine("");
                 consoleIO.WriteLine("------------");
 
             }
             catch (MiniPLException e)
             {
-                consoleIO.WriteLine("There was an error interpreting the minipl program");
+                consoleIO.WriteLine("");
+                consoleIO.WriteLine("------------");
+                consoleIO.WriteLine("");
                 consoleIO.WriteLine(e.Message);
+                consoleIO.WriteLine("");
             }
         }
 
-        public void interpret(Node<String> node)
+        public void interpretAST(Node<String> node)
         {
             if (node.value == "$$")
             {
@@ -118,7 +107,7 @@ namespace MiniPLInterpreter.Interpreter
             {
                 foreach (Node<String> n in node.children)
                 {
-                    interpret(n);
+                    interpretAST(n);
                 }
             }
             else if (node.value == "var_assignment")
@@ -129,14 +118,14 @@ namespace MiniPLInterpreter.Interpreter
                 // assignment without expression
                 if (node.children.Count == 2)
                 {
-                    this.identifiers.Add(identifierName, new Operand(null, identifierType));
+                    this.Identifiers.Add(identifierName, new Operand(null, identifierType));
                     return;
                 }
 
                 Node<string> expressionNode = node.children[2];
                 Operand expressionValue = getExpressionValue(expressionNode);
 
-                this.identifiers.Add(identifierName, expressionValue);
+                this.Identifiers.Add(identifierName, expressionValue);
 
 
             }
@@ -147,7 +136,7 @@ namespace MiniPLInterpreter.Interpreter
                 Node<string> expressionNode = node.children[1];
                 Operand expressionValue = getExpressionValue(expressionNode);
 
-                identifiers[identifierName].value = expressionValue.value;
+                Identifiers[identifierName].value = expressionValue.value;
 
             }
             else if (node.value == "print")
@@ -161,7 +150,7 @@ namespace MiniPLInterpreter.Interpreter
             else if (node.value == "read")
             {
                 string identifierName = node.children[0].value;
-                Operand identifier = identifiers[identifierName];
+                Operand identifier = Identifiers[identifierName];
 
                 string readValue = consoleIO.ReadLine();
 
@@ -169,13 +158,13 @@ namespace MiniPLInterpreter.Interpreter
                 {
                     if (!MiniPLHelper.isInt(readValue))
                     {
-                        miniPLExceptionThrower
+                        MiniPLExceptionThrower
                             .throwMiniPLException($"Cannot cast {readValue} to type 'int'");
                     }
                 }
 
 
-                this.identifiers[identifierName].value = readValue;
+                this.Identifiers[identifierName].value = readValue;
             }
             else if (node.value == "assert")
             {
@@ -185,7 +174,7 @@ namespace MiniPLInterpreter.Interpreter
 
                 if (expressionOperand.type != "bool")
                 {
-                    miniPLExceptionThrower
+                    MiniPLExceptionThrower
                         .throwMiniPLException($"expected a bool expression for assert statement. Found {expressionOperand.type}");
                 }
                 consoleIO.WriteLine("");
@@ -196,7 +185,7 @@ namespace MiniPLInterpreter.Interpreter
                 Node<string> loopVariableNode = node.children[0];
                 string loopVariableName = loopVariableNode.value;
 
-                Operand initLoopVarValues = identifiers[loopVariableName];
+                Operand initLoopVarValues = Identifiers[loopVariableName];
                 Operand initialLoopOperand = new Operand(initLoopVarValues.value, initLoopVarValues.type);
 
                 Node<string> firstExpressionNode = node.children[1];
@@ -222,11 +211,11 @@ namespace MiniPLInterpreter.Interpreter
                 int firstExpressionValue = getExpressionValue(firstExpressionNode).valueToInt();
                 int secondExpressionValue = getExpressionValue(secondExpressionNode).valueToInt();
 
-                identifiers[loopVariableName].value = firstExpressionValue.ToString();
+                Identifiers[loopVariableName].value = firstExpressionValue.ToString();
 
                 while (true)
                 {
-                    string loopVariableValueString = identifiers[loopVariableName].value;
+                    string loopVariableValueString = Identifiers[loopVariableName].value;
                     int.TryParse(loopVariableValueString, out int i);
                     if (i > secondExpressionValue)
                     {
@@ -235,13 +224,13 @@ namespace MiniPLInterpreter.Interpreter
 
                     foreach (Node<string> stmt in statements)
                     {
-                        interpret(stmt);
+                        interpretAST(stmt);
                     }
                     int newI = i + 1;
-                    identifiers[loopVariableName].value = newI.ToString();
+                    Identifiers[loopVariableName].value = newI.ToString();
                 }
 
-                identifiers[loopVariableName] = initialLoopOperand;
+                Identifiers[loopVariableName] = initialLoopOperand;
 
             }
         }
@@ -304,7 +293,7 @@ namespace MiniPLInterpreter.Interpreter
                 string operandValue = usedValue.Split('(')[1].Split(')')[0];
                 if (idOrType == "id")
                 {
-                    return this.identifiers.GetValueOrDefault(operandValue);
+                    return this.Identifiers.GetValueOrDefault(operandValue);
                 }
 
                 return new Operand(operandValue, idOrType);

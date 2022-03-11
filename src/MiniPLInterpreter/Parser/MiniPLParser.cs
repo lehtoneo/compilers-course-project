@@ -168,6 +168,7 @@ namespace MiniPLInterpreter.Parser
                     {
                         if (forLoopIndex == 1)
                         {
+                            forLoopIndex--;
                             return;
                         }
                         else
@@ -254,7 +255,8 @@ namespace MiniPLInterpreter.Parser
 
             Token shouldBeForToken = CurrentToken();
             miniPLHelper.checkTokenThrowsMiniPLError(shouldBeForToken, "for");
-
+            NextToken();
+            checkCurrentTokenIsRowsEndOfLine(shouldBeForToken.row);
             loopNode.children.Add(new Node<string>("for"));
             foreach (string key in identifiers.Keys)
             {
@@ -265,7 +267,6 @@ namespace MiniPLInterpreter.Parser
                 }
             }
             forLoopIndex--;
-            NextToken();
         }
 
         public void identAssignment(Node<String> parent)
@@ -305,7 +306,8 @@ namespace MiniPLInterpreter.Parser
                 miniPLExceptionThrower
                     .throwMiniPLException($"Invalid assignment at row {ident.row}: cannot convert type '{pI.type}' to type '{type}' ");
             }
-            NextToken();
+            checkCurrentTokenIsRowsEndOfLine(assignmentToken.row);
+
 
         }
         public void assert(Node<String> parent)
@@ -327,7 +329,7 @@ namespace MiniPLInterpreter.Parser
                     .throwMiniPLException($"expected expression return value 'bool' at row {first.row}, found {expressionType}");
             }
 
-            NextToken();
+            checkCurrentTokenIsRowsEndOfLine(first.row);
 
 
         }
@@ -335,8 +337,10 @@ namespace MiniPLInterpreter.Parser
         {
             Node<String> printNode = new Node<string>("print");
             parent.children.Add(printNode);
+            Token first = CurrentToken();
             NextToken();
             expr(printNode);
+            checkCurrentTokenIsRowsEndOfLine(first.row);
 
         }
 
@@ -362,6 +366,7 @@ namespace MiniPLInterpreter.Parser
                 catch (MiniPLException e)
                 {
                     errors.Add(e.Message);
+
                 }
             }
 
@@ -372,6 +377,8 @@ namespace MiniPLInterpreter.Parser
                     .throwMiniPLException($"Invalid read at row {varIdent.row}. Cannot read variable of type '{pI.type}'");
             }
             NextToken();
+
+            checkCurrentTokenIsRowsEndOfLine(varIdent.row);
 
 
         }
@@ -408,7 +415,6 @@ namespace MiniPLInterpreter.Parser
             NextToken();
             if (CurrentToken().value == ";")
             {
-                NextToken();
                 return;
             }
 
@@ -416,7 +422,7 @@ namespace MiniPLInterpreter.Parser
             miniPLHelper.checkTokenThrowsMiniPLError(assignmentToken, ":=");
             NextToken();
             expr(varAssignmentNode);
-            NextToken();
+            checkCurrentTokenIsRowsEndOfLine(assignmentToken.row);
         }
 
         public string expr(Node<String> parent)
@@ -427,28 +433,42 @@ namespace MiniPLInterpreter.Parser
             if (miniPLHelper.isUnaryOperator(first.value))
             {
 
-                Node<string> unaryNode = new Node<string>("!");
-                parent.children.Add(unaryNode);
-
-                NextToken();
-                string operandType = Operand(unaryNode);
-                if (operandType != "bool")
-                {
-                    miniPLExceptionThrower.throwInvalidUsageOfOperatorError(first.row, "!", operandType);
-                }
-                return "bool";
+                return unary_expr(parent);
             }
             else
             {
                 Node<string> operatorNode = new Node<string>("___");
                 parent.children.Add(operatorNode);
                 string firstOperandType = Operand(operatorNode);
+
                 Token currentToken = CurrentToken();
-                if (miniPLHelper.isOperator(currentToken.value) && currentToken.value != "!")
+                if (miniPLHelper.isOperator(currentToken.value))
                 {
-                    operatorNode.value = currentToken.value;
-                    string finalType = expr_tail(operatorNode, parent, firstOperandType);
-                    return finalType;
+                    Token operatorToken = CurrentToken();
+                    string op = operatorToken.value;
+                    operatorNode.value = op;
+
+                    NextToken();
+                    if (!miniPLHelper.isValidOperatorForType(op, firstOperandType))
+                    {
+                        miniPLExceptionThrower.throwInvalidOperatorError(operatorToken.row, op, firstOperandType);
+                    }
+
+
+                    string secondOperandType = Operand(operatorNode);
+                    if (firstOperandType != secondOperandType)
+                    {
+                        miniPLExceptionThrower.throwInvalidExpressionError(operatorToken.row, firstOperandType, secondOperandType);
+                    }
+
+                    if (op == "+")
+                    {
+                        return firstOperandType;
+                    }
+                    else
+                    {
+                        return miniPLHelper.getReturnTypeFromOperator(op);
+                    }
                 }
 
                 else
@@ -469,43 +489,18 @@ namespace MiniPLInterpreter.Parser
 
         }
 
-        public string expr_tail(Node<String> operatorNode, Node<String> parentNode, string previousType)
+        public string unary_expr(Node<string> parent)
         {
-            Token operatorToken = CurrentToken();
-            string op = operatorToken.value;
-
-            if (!miniPLHelper.isValidOperatorForType(op, previousType))
-            {
-                miniPLExceptionThrower.throwInvalidOperatorError(operatorToken.row, op, previousType);
-            }
-
+            Node<string> unaryNode = new Node<string>("!");
+            parent.children.Add(unaryNode);
+            Token first = CurrentToken();
             NextToken();
-
-            Token currentToken = CurrentToken();
-            string type = Operand(operatorNode);
-
-            if (type != previousType)
+            string operandType = Operand(unaryNode);
+            if (operandType != "bool")
             {
-                miniPLExceptionThrower.throwInvalidExpressionError(currentToken.row, previousType, type);
+                miniPLExceptionThrower.throwInvalidUsageOfOperatorError(first.row, "!", operandType);
             }
-
-            if (miniPLHelper.isOperator(currentToken.value))
-            {
-                Node<string> newOperatorNode = new Node<string>(currentToken.value);
-                parentNode.children.Add(newOperatorNode);
-                expr_tail(newOperatorNode, operatorNode, type);
-            }
-
-            if (op == "+")
-            {
-                return previousType;
-            }
-            else
-            {
-                return miniPLHelper.getReturnTypeFromOperator(op);
-            }
-
-
+            return "bool";
         }
 
         public string Operand(Node<String> parent)
@@ -514,9 +509,9 @@ namespace MiniPLInterpreter.Parser
 
 
             Token first = CurrentToken();
+            NextToken();
             if (first.value == "(")
             {
-                NextToken();
                 string type = expr(operandNode);
                 Token rightParenth = CurrentToken();
                 miniPLHelper.checkTokenThrowsMiniPLError(rightParenth, ")");
@@ -529,7 +524,6 @@ namespace MiniPLInterpreter.Parser
 
                 string value = first.value;
 
-                NextToken();
                 bool isNumeric = int.TryParse(value, out int numericValue);
                 if (isNumeric)
                 {
@@ -610,6 +604,19 @@ namespace MiniPLInterpreter.Parser
             return t.value;
 
 
+        }
+
+        private void checkCurrentTokenIsRowsEndOfLine(int row)
+        {
+            Token curr = CurrentToken();
+            if (curr.row == row && curr.value != ";")
+            {
+                miniPLExceptionThrower.throwMiniPLException($"SYNTAX ERROR: Expected ';', found {curr.value}, at row {row}");
+            }
+            else if (curr.value != ";")
+            {
+                miniPLExceptionThrower.throwMiniPLException($"SYNTAX ERROR: Expected ';', found nothing, at row {row}");
+            }
         }
 
         private bool isIdentifierDefined(string ident)

@@ -19,7 +19,7 @@ namespace MiniPLUnitTests
 
             string[] program1 = new string[] { "var X : int := 4 + (6 * 2);", "print X;" };
 
-            var interpreter = new MPLInterpreter(mockConsoleIO.Object);
+            var interpreter = new MPLInterpreter(scanner, mPLP, mockConsoleIO.Object);
 
             interpreter.interpret(program1);
 
@@ -186,6 +186,39 @@ namespace MiniPLUnitTests
 
             interpreter.interpret(program3);
 
+            mockConsoleIO.Verify(t => t.WriteLine("ASSERT false"), Times.AtLeastOnce());
+
+        }
+
+        [TestMethod]
+        public void TestProgram5WithNestedForLoop()
+        {
+            var mockConsoleIO = new Mock<IConsoleIO>();
+            var number = "2";
+            mockConsoleIO.Setup(t => t.ReadLine()).Returns(number);
+
+            MiniPLScanner scanner = new MiniPLScanner();
+            MiniPLParser mPLP = new MiniPLParser();
+
+            string[] program3 = new string[] {
+            "var n : int := 0;",
+            "print \"How many times?\";",
+            " ",
+            "read n;",
+            "var x : int;",
+            "var y : int;",
+            "for x in 0..n-1 do",
+                "for y in 0..n-1 do",
+                    "print 2 * (2 * 2);",
+                "end for;",
+            "end for;",
+            "assert (x = n);"
+        };
+
+            var interpreter = new MPLInterpreter(scanner, mPLP, mockConsoleIO.Object);
+
+            interpreter.interpret(program3);
+            mockConsoleIO.Verify(t => t.Write("8"), Times.Exactly(4));
             mockConsoleIO.Verify(t => t.WriteLine("ASSERT false"), Times.AtLeastOnce());
 
         }

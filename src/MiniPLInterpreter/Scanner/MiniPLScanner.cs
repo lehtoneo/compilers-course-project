@@ -7,7 +7,7 @@ using MiniPLInterpreter.Exceptions;
 
 namespace MiniPLInterpreter.Scanner
 {
-    public class MiniPLScanner : AScanner
+    public class MiniPLScanner : IScanner
     {
         public MiniPLHelper miniPLHelper;
         public MiniPLExceptionThrower miniPLExceptionThrower;
@@ -28,7 +28,7 @@ namespace MiniPLInterpreter.Scanner
             }
         }
 
-        public override ScannerResult scan(string[] program)
+        public ScannerResult scan(string[] program)
         {
 
             List<Token> tokenList = new List<Token>();
@@ -154,7 +154,7 @@ namespace MiniPLInterpreter.Scanner
                                     tokenList.Add(new Token(token, lineI, colI - token.Length, "identifier"));
                                     token = "";
                                 }
-                                tokenList.Add(new Token("..", lineI, colI, "symbol"));
+                                tokenList.Add(new Token("..", lineI, colI, ".."));
                                 colI = colI + 1;
                             }
                             else
@@ -180,14 +180,14 @@ namespace MiniPLInterpreter.Scanner
                             {
                                 if (line[colI + 1] == '=')
                                 {
-                                    tokenList.Add(new Token(":=", lineI, colI, "symbol"));
+                                    tokenList.Add(new Token(":=", lineI, colI, ":="));
                                     colI++;
                                     continue;
                                 }
                             }
                         }
 
-                        tokenList.Add(new Token(c, lineI, colI, "symbol"));
+                        tokenList.Add(new Token(c, lineI, colI, $"{c}"));
                     }
                     else
                     {
