@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 using MiniPLInterpreter.Utils;
-using MiniPLInterpreter.Interfaces;
-using MiniPLInterpreter.Abstracts;
+using MiniPLInterpreter.Scanner;
 using MiniPLInterpreter.Exceptions;
 
-namespace MiniPLInterpreter.Implementations
+namespace MiniPLInterpreter.Scanner
 {
     public class MiniPLScanner : AScanner
     {
@@ -18,7 +17,7 @@ namespace MiniPLInterpreter.Implementations
             this.miniPLHelper = new MiniPLHelper(miniPLExceptionThrower);
             this.validCharDict = new Dictionary<char, bool>();
 
-            foreach (char c in miniPLHelper.symbolDict.Keys)
+            foreach (char c in miniPLHelper.oneCharTokens.Keys)
             {
                 validCharDict.Add(c, true);
             }
@@ -168,7 +167,7 @@ namespace MiniPLInterpreter.Implementations
                             errors.Add($"Invalid char {c} at row {line} col {colI + 1}.");
                         }
                     }
-                    else if (miniPLHelper.isSymbol(c))
+                    else if (miniPLHelper.isOneCharToken(c))
                     {
                         if (token != "")
                         {
@@ -213,6 +212,8 @@ namespace MiniPLInterpreter.Implementations
                 }
                 i++;
             }
+
+            tokenList.Add(new Token("EOF", lineI + 1, 0, "EOF"));
 
 
             return new ScannerResult(tokenList, errors);

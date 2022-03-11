@@ -5,7 +5,7 @@ using MiniPLInterpreter.Utils;
 using MiniPLInterpreter.Interfaces;
 using MiniPLInterpreter.Exceptions;
 
-namespace MiniPLInterpreter.Implementations
+namespace MiniPLInterpreter.Parser
 {
     public class MiniPLParser : IParser
     {
@@ -14,302 +14,245 @@ namespace MiniPLInterpreter.Implementations
         public MiniPLExceptionThrower miniPLExceptionThrower;
         public MiniPLHelper miniPLHelper;
         private int forLoopIndex = 0;
+        private List<string> errors;
+        private int tokenI;
         public MiniPLParser()
         {
             this.miniPLExceptionThrower = new MiniPLExceptionThrower("Parser");
             this.miniPLHelper = new MiniPLHelper(miniPLExceptionThrower);
         }
-        public Node<String> parse(List<Token> tokens)
+
+        private Token CurrentToken()
         {
-            this.identifiers = new Dictionary<string, ParserIdentifier>();
-            this.forLoopIndex = 0;
-
-            this.Tokens = tokens;
-
-            Node<String> parseTree = new Node<String>("program");
-
-            stmt_list(parseTree, tokens);
-
-            return parseTree;
-
+            return Tokens[tokenI];
+        }
+        private Token NextToken()
+        {
+            Token current = CurrentToken();
+            if (current.value == "EOF")
+            {
+                return current;
+            }
+            tokenI++;
+            return Tokens[tokenI];
         }
 
-
-
-        public void stmt_list(Node<String> parent, List<Token> tokens)
+        private void GoToNextStatement()
         {
-            if (tokens.Count == 0)
+            while (true)
             {
-                parent.children.Add(new Node<string>("$$"));
-                return;
-            }
-
-            List<Token> firstStatement = new List<Token>();
-            bool inLoop = false;
-            int innerLoopCount = 0;
-            int i = -1;
-            while (i + 1 < tokens.Count)
-            {
-
-                i++;
-                Token t = tokens[i];
-                string tokenValue = t.value;
-                if (i == 0)
+                Token currToken = CurrentToken();
+                string currTokenValue = currToken.value;
+                if (currTokenValue == ";" || currTokenValue == "EOF")
                 {
-                    if (tokenValue == "for")
-                    {
-                        firstStatement.Add(t);
-                        inLoop = true;
-                        continue;
-                    }
-                }
-
-                if (inLoop)
-                {
-                    if (tokenValue == "end")
-                    {
-                        firstStatement.Add(t);
-
-                        i++;
-                        if (tokens.Count < i)
-                        {
-                            miniPLExceptionThrower
-                                .throwExpectedSomethingFoundNothingError(t.row, "for");
-                        }
-                        Token shouldBeFor = tokens[i];
-                        miniPLHelper.checkTokenThrowsMiniPLError(shouldBeFor, "for");
-
-                        i++;
-                        if (tokens.Count < i)
-                        {
-                            miniPLExceptionThrower
-                                .throwExpectedSomethingFoundNothingError(t.row, ";");
-                        }
-
-                        Token shouldBeEndOfLine = tokens[i];
-                        miniPLHelper.checkTokenThrowsMiniPLError(shouldBeEndOfLine, ";");
-
-                        firstStatement.Add(shouldBeFor);
-
-                        if (innerLoopCount == 0)
-                        {
-
-                            break;
-                        }
-                        else
-                        {
-                            firstStatement.Add(shouldBeEndOfLine);
-                            innerLoopCount--;
-                        }
-                    }
-                    else if (tokenValue == "for")
-                    {
-                        innerLoopCount++;
-                        firstStatement.Add(t);
-                    }
-                    else
-                    {
-                        firstStatement.Add(t);
-                    }
-
+                    break;
                 }
                 else
                 {
-                    if (tokenValue == ";")
-                    {
-                        i++;
-                        break;
-                    }
-                    else
-                    {
-                        firstStatement.Add(t);
-                    }
+                    NextToken();
                 }
             }
-            stmt(parent, firstStatement);
-            List<Token> restOfStatements = new List<Token>();
-            while (i < tokens.Count)
-            {
-                Token t = tokens[i];
-                restOfStatements.Add(t);
-                i++;
-            }
-
-            stmt_list(parent, restOfStatements);
         }
-        public void stmt(Node<String> parent, List<Token> statement)
+
+        public ParserResult parse(List<Token> tokens)
+        {
+            this.identifiers = new Dictionary<string, ParserIdentifier>();
+            this.forLoopIndex = 0;
+            this.errors = new List<string>();
+            this.Tokens = tokens;
+            this.tokenI = 0;
+
+            Node<String> ast = program(tokens);
+
+            ParserResult parserResult = new ParserResult(ast, errors);
+
+            return parserResult;
+
+        }
+
+        public Node<string> program(List<Token> tokens)
+        {
+            Node<String> ast = new Node<String>("program");
+
+            stmt_list(ast);
+
+            ast.children.Add(new Node<string>("$$"));
+
+
+
+            return ast;
+        }
+
+
+
+        public void stmt_list(Node<String> parent)
         {
 
-            Node<string> statementNode = parent;
-
-            if (statement.Count == 0)
+            if (CurrentToken().value == "EOF" || CurrentToken().value == "end")
             {
-                statementNode.children.Add(new Node<string>("$$"));
                 return;
             }
-            Token firstToken = statement[0];
 
-            if (firstToken.value == "var")
+
+            stmt(parent);
+
+            stmt_list(parent);
+        }
+        public void stmt(Node<String> parent)
+        {
+            Node<string> statementNode = parent;
+
+            Token currentToken = CurrentToken();
+
+            if (currentToken.value == ";")
             {
-                this.var(statementNode, statement);
+                currentToken = NextToken();
             }
-            else if (firstToken.value == "read")
+
+            if (currentToken.value == "EOF" || currentToken.value == "end")
             {
-                read(statementNode, statement);
+                return;
             }
-            else if (firstToken.value == "print")
+
+
+            try
             {
-                print(statementNode, statement);
+
+                switch (currentToken.value)
+                {
+                    case "var":
+                        this.var(statementNode);
+                        break;
+                    case "read":
+                        read(statementNode);
+                        break;
+                    case "print":
+                        print(statementNode);
+                        break;
+                    case "assert":
+                        assert(statementNode);
+                        break;
+                    case "for":
+                        forLoop(statementNode);
+                        break;
+                    default:
+                        identAssignment(statementNode);
+                        break;
+                }
+
             }
-            else if (firstToken.value == "assert")
+            catch (MiniPLException e)
             {
-                assert(statementNode, statement);
+
+                errors.Add(e.Message);
+                // basic case
+                if (forLoopIndex == 0)
+                {
+
+                    GoToNextStatement();
+                    return;
+                }
+
+                // handle errors in forloop, exit all forloops if they are nested
+
+                while (true)
+                {
+                    Token currToken = CurrentToken();
+                    string currTokenValue = currToken.value;
+                    if (currTokenValue == "EOF")
+                    {
+                        return;
+                    }
+
+                    if (currToken.value == "end")
+                    {
+                        if (forLoopIndex == 1)
+                        {
+                            return;
+                        }
+                        else
+                        {
+                            forLoopIndex--;
+                        }
+                    }
+
+                    NextToken();
+                }
             }
-            else if (firstToken.value == "for")
-            {
-                forLoop(statementNode, statement);
-            }
-            else
-            {
-                identAssignment(statementNode, statement);
-            }
+
+
         }
 
-        public void forLoop(Node<String> parent, List<Token> tokens)
+        public void forLoop(Node<String> parent)
         {
             forLoopIndex++;
 
             Node<String> loopNode = new Node<string>("forloop");
-            Token first = tokens[0];
             parent.children.Add(loopNode);
-            if (tokens.Count < 2)
+
+            NextToken();
+
+            Token identifierToken = CurrentToken();
+            bool isIdentDefined = isIdentifierDefined(identifierToken.value);
+
+            if (!isIdentDefined)
             {
-                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.row, "identifier");
-            }
-            Token identifierToken = tokens[1];
-            this.identifierCheck(identifierToken);
-            ParserIdentifier pI = this.identifiers.GetValueOrDefault(identifierToken.value, new ParserIdentifier("undefined", -1));
-            if (pI.type == "undefined")
-            {
-                miniPLExceptionThrower
-                    .throwUndefinedVariableError(identifierToken.row, identifierToken.value);
+                try
+                {
+                    miniPLExceptionThrower
+                    .throwUndefinedVariableError(identifierToken.row, identifierToken.column, identifierToken.value);
+                }
+                catch (MiniPLException e)
+                {
+                    errors.Add(e.Message);
+                }
             }
 
-            if (pI.type != "int")
+            ParserIdentifier pI = this.identifiers.GetValueOrDefault(identifierToken.value, new ParserIdentifier("undefined", -1));
+            if (isIdentDefined && pI.type != "int")
             {
                 miniPLExceptionThrower
-                    .throwMiniPLException($"Identifier error at row {identifierToken.row}: '{identifierToken.value}' has invalid type '{pI.type}', expected 'int'");
+                    .throwMiniPLException($"Identifier error at row {identifierToken.row} col {identifierToken.column}: '{identifierToken.value}' has invalid type '{pI.type}', expected 'int'");
             }
 
             loopNode.children.Add(new Node<string>(identifierToken.value));
 
-            if (tokens.Count < 3)
-            {
-                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.row, "in");
-            }
-            Token inToken = tokens[2];
-            if (inToken.value != "in")
-            {
-                miniPLExceptionThrower.throwUnExpectedValueError(
-                    first.row,
-                    inToken.value,
-                    "in"
-                );
-            }
+            NextToken();
+
+            Token inToken = CurrentToken();
+            miniPLHelper.checkTokenThrowsMiniPLError(inToken, "in");
 
 
-            if (tokens.Count < 4)
-            {
-                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(
-                    first.row,
-                    "For loop expression"
-                );
-            }
-            int firstExpressionStartIndex = 3;
-            int i = firstExpressionStartIndex;
-            List<Token> firstExpressionTokens = new List<Token>();
+            NextToken();
+            string typeOfFirstExpr = expr(loopNode);
 
-            while (i < tokens.Count)
-            {
-                Token t = tokens[i];
-                if (t.value == "..")
-                {
-
-
-                    break;
-                }
-                else
-                {
-                    firstExpressionTokens.Add(t);
-                }
-                i++;
-            }
-            if (firstExpressionTokens.Count == 0)
-            {
-                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(tokens[i - 1].row, "expression");
-            }
-
-            expr(loopNode, firstExpressionTokens);
-            Token shouldBeDotsToken = tokens[i];
+            Token shouldBeDotsToken = CurrentToken();
             miniPLHelper.checkTokenThrowsMiniPLError(shouldBeDotsToken, "..");
 
-            i++;
-            List<Token> secondExpressionTokens = new List<Token>();
-            while (i < tokens.Count)
+            NextToken();
+
+            string typeOfSecondExpr = expr(loopNode);
+            if (typeOfFirstExpr != "int" || typeOfSecondExpr != "int")
             {
-                Token t = tokens[i];
-
-                if (t.value == "do")
-                {
-                    break;
-                }
-                else
-                {
-                    secondExpressionTokens.Add(t);
-                }
-                i++;
+                miniPLExceptionThrower.throwInvalidExpressionError(CurrentToken().row, "int", typeOfSecondExpr);
             }
-
-            if (secondExpressionTokens.Count == 0)
-            {
-                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(tokens[i - 1].row, "expression");
-            }
-
-            expr(loopNode, secondExpressionTokens);
-            Token shouldBeDoToken = tokens[i];
+            Token shouldBeDoToken = CurrentToken();
 
             miniPLHelper.checkTokenThrowsMiniPLError(shouldBeDoToken, "do");
 
-            List<Token> statements = new List<Token>();
-            i++;
-            if (i >= tokens.Count)
-            {
-                miniPLExceptionThrower
-                    .throwExpectedSomethingFoundNothingError(first.row + 1, "statements");
-            }
+            NextToken();
 
-            while (i < tokens.Count - 2)
-            {
-                Token t = tokens[i];
-                statements.Add(t);
-                i++;
-            }
+            stmt_list(loopNode);
 
-            Token shouldBeEndToken = tokens[i];
+            Token shouldBeEndToken = CurrentToken();
             miniPLHelper.checkTokenThrowsMiniPLError(shouldBeEndToken, "end");
 
-            stmt_list(loopNode, statements);
 
 
             loopNode.children.Add(new Node<string>("end"));
-            i++;
-            if (i >= tokens.Count)
-            {
-                miniPLExceptionThrower
-                    .throwExpectedSomethingFoundNothingError(shouldBeEndToken.row, "for");
-            }
+            NextToken();
 
-            Token shouldBeForToken = tokens[i];
+            Token shouldBeForToken = CurrentToken();
             miniPLHelper.checkTokenThrowsMiniPLError(shouldBeForToken, "for");
 
             loopNode.children.Add(new Node<string>("for"));
@@ -322,167 +265,134 @@ namespace MiniPLInterpreter.Implementations
                 }
             }
             forLoopIndex--;
+            NextToken();
         }
 
-        public void identAssignment(Node<String> parent, List<Token> tokens)
+        public void identAssignment(Node<String> parent)
         {
-            Token ident = tokens[0];
-            identifierCheck(ident);
-            string identifier = ident.value;
+            Token ident = CurrentToken();
 
+            string identifier = ident.value;
+            NextToken();
             Node<string> assignmentNode = new Node<string>("assignment");
 
             parent.children.Add(assignmentNode);
+            bool isIdentDefined = isIdentifierDefined(identifier);
 
-            if (identifiers.GetValueOrDefault(identifier, new ParserIdentifier("undefined", -1)).type == "undefined")
+            if (!isIdentDefined)
             {
-                miniPLExceptionThrower.throwUndefinedVariableError(ident.row, identifier);
+                try
+                {
+                    miniPLExceptionThrower.throwUndefinedVariableError(ident.row, ident.column, identifier);
+                }
+                catch (MiniPLException e)
+                {
+                    errors.Add(e.Message);
+                }
             }
+
             assignmentNode.children.Add(new Node<string>(identifier));
-            if (tokens.Count < 2)
-            {
-                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(ident.row, ":=");
-            }
-            Token assignmentToken = tokens[1];
-            if (assignmentToken.value != ":=")
-            {
-                miniPLExceptionThrower.throwUnExpectedValueError(
-                    assignmentToken.row,
-                    assignmentToken.value,
-                    ":="
-                );
-            }
 
-            List<Token> expressionTokens = new List<Token>();
-            int i = 2;
-            while (i < tokens.Count)
-            {
-                Token curToken = tokens[i];
-                expressionTokens.Add(curToken);
-                i++;
-            }
-            string type = expr(assignmentNode, expressionTokens);
+            Token assignmentToken = CurrentToken();
+
+            miniPLHelper.checkTokenThrowsMiniPLError(assignmentToken, ":=");
+
+            NextToken();
+            string type = expr(assignmentNode);
             ParserIdentifier pI = identifiers.GetValueOrDefault(identifier);
-            if (type != pI.type)
+            if (type != pI.type && isIdentDefined)
             {
                 miniPLExceptionThrower
                     .throwMiniPLException($"Invalid assignment at row {ident.row}: cannot convert type '{pI.type}' to type '{type}' ");
             }
+            NextToken();
 
         }
-        public void assert(Node<String> parent, List<Token> tokens)
+        public void assert(Node<String> parent)
         {
 
             Node<String> assertNode = new Node<string>("assert");
 
             parent.children.Add(assertNode);
+            Token first = CurrentToken();
+            NextToken();
+            Token leftParenthesis = CurrentToken();
+            miniPLHelper.checkTokenThrowsMiniPLError(leftParenthesis, "(");
 
-            Token first = tokens[0];
-            if (tokens.Count < 2)
+
+            string expressionType = expr(assertNode);
+            if (expressionType != "bool")
             {
-                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.row, "(");
+                miniPLExceptionThrower
+                    .throwMiniPLException($"expected expression return value 'bool' at row {first.row}, found {expressionType}");
             }
-            Token leftParenthesis = tokens[1];
-            if (leftParenthesis.value != "(")
-            {
-                miniPLExceptionThrower.throwUnExpectedValueError(
-                    first.row,
-                    leftParenthesis.value,
-                    "("
-                );
-            }
-            List<Token> expressionTokens = new List<Token>();
-            int i = 2;
-            while (i < tokens.Count)
-            {
-                Token currentT = tokens[i];
-                if (currentT.value != ")")
-                {
-                    expressionTokens.Add(currentT);
-                }
-                else
-                {
-                    string expressionType = expr(assertNode, expressionTokens);
-                    if (expressionType != "bool")
-                    {
-                        miniPLExceptionThrower
-                            .throwMiniPLException($"expected expression return value 'bool' at row {first.row}, found {expressionType}");
-                    }
-                    return;
-                }
-                i++;
-            }
-            miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.row, ")");
+
+            NextToken();
 
 
         }
-        public void print(Node<String> parent, List<Token> tokens)
+        public void print(Node<String> parent)
         {
             Node<String> printNode = new Node<string>("print");
             parent.children.Add(printNode);
-            List<Token> expressionTokens = tokens.GetRange(1, tokens.Count - 1);
-            expr(printNode, expressionTokens);
+            NextToken();
+            expr(printNode);
 
         }
 
-        public void read(Node<String> parent, List<Token> tokens)
+        public void read(Node<String> parent)
         {
             Node<String> readNode = new Node<string>("read");
 
             parent.children.Add(readNode);
+            NextToken();
 
-            if (tokens.Count != 2)
+            Token varIdent = CurrentToken();
+
+            ParserIdentifier pI = this.identifiers.GetValueOrDefault(varIdent.value, new ParserIdentifier("undefined", -1));
+
+            readNode.children.Add(new Node<string>(varIdent.value));
+
+            if (pI.type == "undefined")
             {
-                miniPLExceptionThrower.throwMiniPLException("Invalid usage of read");
-            }
-            else
-            {
-                Token varIdent = tokens[1];
-
-                ParserIdentifier pI = this.identifiers.GetValueOrDefault(varIdent.value, new ParserIdentifier("undefined", -1));
-
-                readNode.children.Add(new Node<string>(varIdent.value));
-
-                if (pI.type == "undefined")
+                try
                 {
-                    miniPLExceptionThrower.throwUndefinedVariableError(varIdent.row, varIdent.value);
+                    miniPLExceptionThrower.throwUndefinedVariableError(varIdent.row, varIdent.column, varIdent.value);
                 }
-
-                List<string> validReadTypes = new List<string> { "int", "string" };
-                if (!validReadTypes.Contains(pI.type))
+                catch (MiniPLException e)
                 {
-                    miniPLExceptionThrower
-                        .throwMiniPLException($"Invalid read at row {varIdent.row}. Cannot read variable of type '{pI.type}'");
+                    errors.Add(e.Message);
                 }
             }
+
+            List<string> validReadTypes = new List<string> { "int", "string" };
+            if (pI.type != "undefined" && !validReadTypes.Contains(pI.type))
+            {
+                miniPLExceptionThrower
+                    .throwMiniPLException($"Invalid read at row {varIdent.row}. Cannot read variable of type '{pI.type}'");
+            }
+            NextToken();
+
 
         }
 
-        public void var(Node<String> parent, List<Token> tokens)
+        public void var(Node<String> parent)
         {
-            Token first = tokens[0];
+            Token first = CurrentToken();
             Node<String> varAssignmentNode = new Node<string>("var_assignment");
             parent.children.Add(varAssignmentNode);
 
-            if (tokens.Count < 4)
-            {
-                miniPLExceptionThrower.throwMiniPLException($"Invalid usage of var at row {first.row}");
-            }
-            int identI = 1;
-            Token identToken = tokens[identI];
-            int typeI = 3;
-            int assignMentI = 4;
+            NextToken();
+            Token identToken = CurrentToken();
 
-            this.identifierCheck(identToken);
-
+            identifierCheck(identToken);
+            NextToken();
             varAssignmentNode.children.Add(new Node<String>(identToken.value));
 
-            if (tokens[2].value != ":")
-            {
-                miniPLExceptionThrower.throwUnExpectedValueError(first.row, tokens[2].value, ":");
-            }
-
-            string type = this.validTypeCheck(tokens[typeI]);
+            miniPLHelper.checkTokenThrowsMiniPLError(CurrentToken(), ":");
+            NextToken();
+            Token shouldBeType = CurrentToken();
+            string type = this.validTypeCheck(shouldBeType);
 
             if (this.identifiers.GetValueOrDefault(identToken.value, new ParserIdentifier("undefined", -1)).type != "undefined")
             {
@@ -495,50 +405,33 @@ namespace MiniPLInterpreter.Implementations
             }
 
             varAssignmentNode.children.Add(new Node<String>(type));
-            if (tokens.Count == 4)
+            NextToken();
+            if (CurrentToken().value == ";")
             {
+                NextToken();
                 return;
             }
 
-            Token assignmentToken = tokens[assignMentI];
-            if (assignmentToken.value != ":=")
-            {
-                miniPLExceptionThrower.throwUnExpectedValueError(first.row, assignmentToken.value, ":=");
-            }
-
-            if (tokens.Count < 6)
-            {
-                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.row, "expression");
-            }
-
-            List<Token> expression = new List<Token>();
-            int i = assignMentI + 1;
-            while (i < tokens.Count)
-            {
-                expression.Add(tokens[i]);
-                i++;
-            }
-            expr(varAssignmentNode, expression);
+            Token assignmentToken = CurrentToken();
+            miniPLHelper.checkTokenThrowsMiniPLError(assignmentToken, ":=");
+            NextToken();
+            expr(varAssignmentNode);
+            NextToken();
         }
 
-        public string expr(Node<String> parent, List<Token> tokens)
+        public string expr(Node<String> parent)
         {
-            if (tokens.Count < 1)
-            {
-                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(-1, "expression");
-            }
 
-            Token first = tokens[0];
+            Token first = CurrentToken();
+
             if (miniPLHelper.isUnaryOperator(first.value))
             {
-                if (tokens.Count < 2)
-                {
-                    miniPLExceptionThrower.throwInvalidError(first.row, "expression");
-                }
+
                 Node<string> unaryNode = new Node<string>("!");
                 parent.children.Add(unaryNode);
 
-                string operandType = Operand(unaryNode, tokens.GetRange(1, tokens.Count - 1));
+                NextToken();
+                string operandType = Operand(unaryNode);
                 if (operandType != "bool")
                 {
                     miniPLExceptionThrower.throwInvalidUsageOfOperatorError(first.row, "!", operandType);
@@ -547,66 +440,26 @@ namespace MiniPLInterpreter.Implementations
             }
             else
             {
-                List<Token> firstOperandTokens = new List<Token>();
-                Token operatorToken = null;
-                int i = 0;
-                while (i < tokens.Count)
+                Node<string> operatorNode = new Node<string>("___");
+                parent.children.Add(operatorNode);
+                string firstOperandType = Operand(operatorNode);
+                Token currentToken = CurrentToken();
+                if (miniPLHelper.isOperator(currentToken.value) && currentToken.value != "!")
                 {
-                    Token t = tokens[i];
-                    if (miniPLHelper.isOperator(t.value))
-                    {
-                        operatorToken = t;
-                        i++;
-                        break;
-                    }
-                    else
-                    {
-                        firstOperandTokens.Add(t);
-                        i++;
-                    }
+                    operatorNode.value = currentToken.value;
+                    string finalType = expr_tail(operatorNode, parent, firstOperandType);
+                    return finalType;
                 }
-                if (operatorToken == null)
-                {
 
-                    return this.Operand(parent, firstOperandTokens);
-                }
                 else
                 {
-                    string op = operatorToken.value;
-                    Node<string> operatorNode = new Node<string>(op);
-                    parent.children.Add(operatorNode);
-                    string firstOperandType = this.Operand(operatorNode, firstOperandTokens);
-
-
-                    if (!miniPLHelper.isValidOperatorForType(op, firstOperandType))
+                    parent.children.RemoveAt(parent.children.Count - 1);
+                    foreach (Node<string> child in operatorNode.children)
                     {
-                        miniPLExceptionThrower.throwInvalidOperatorError(operatorToken.row, op, firstOperandType);
+                        parent.children.Add(child);
                     }
 
-                    List<Token> secondOperandTokens = new List<Token>();
-
-                    while (i < tokens.Count)
-                    {
-                        Token t = tokens[i];
-
-
-                        secondOperandTokens.Add(t);
-                        i++;
-                    }
-                    string secondOperandType = Operand(operatorNode, secondOperandTokens);
-                    if (firstOperandType != secondOperandType)
-                    {
-                        miniPLExceptionThrower.throwInvalidExpressionError(operatorToken.row, firstOperandType, secondOperandType);
-                    }
-
-                    if (op == "+")
-                    {
-                        return firstOperandType;
-                    }
-                    else
-                    {
-                        return miniPLHelper.getReturnTypeFromOperator(op);
-                    }
+                    return firstOperandType;
 
 
                 }
@@ -616,57 +469,67 @@ namespace MiniPLInterpreter.Implementations
 
         }
 
-        public string Operand(Node<String> parent, List<Token> tokens)
+        public string expr_tail(Node<String> operatorNode, Node<String> parentNode, string previousType)
         {
-            Node<String> operandNode = parent;
+            Token operatorToken = CurrentToken();
+            string op = operatorToken.value;
 
-            if (tokens.Count < 1)
+            if (!miniPLHelper.isValidOperatorForType(op, previousType))
             {
-                miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(-1, "operand");
+                miniPLExceptionThrower.throwInvalidOperatorError(operatorToken.row, op, previousType);
             }
-            Token first = tokens[0];
-            if (first.value == "(")
+
+            NextToken();
+
+            Token currentToken = CurrentToken();
+            string type = Operand(operatorNode);
+
+            if (type != previousType)
             {
-                int i = 1;
-                List<Token> expression = new List<Token>();
-                bool rightParFound = false;
-                while (i < tokens.Count)
-                {
-                    Token t = tokens[i];
-                    if (t.value == ")")
-                    {
-                        rightParFound = true;
-                        break;
-                    }
-                    else
-                    {
-                        expression.Add(t);
-                    }
-                    i++;
-                }
-                // ")" not found
-                if (rightParFound)
-                {
-                    return expr(operandNode, expression);
-                }
-                else
-                {
-                    miniPLExceptionThrower.throwExpectedSomethingFoundNothingError(first.row, ")");
-                    // to satisfy c# compiler
-                    return "";
-                }
+                miniPLExceptionThrower.throwInvalidExpressionError(currentToken.row, previousType, type);
+            }
 
+            if (miniPLHelper.isOperator(currentToken.value))
+            {
+                Node<string> newOperatorNode = new Node<string>(currentToken.value);
+                parentNode.children.Add(newOperatorNode);
+                expr_tail(newOperatorNode, operatorNode, type);
+            }
 
+            if (op == "+")
+            {
+                return previousType;
             }
             else
             {
-                if (tokens.Count != 1)
-                {
-                    miniPLExceptionThrower.throwMiniPLException($"Invalid operand at row {first.row} near '{first.value}'");
-                }
+                return miniPLHelper.getReturnTypeFromOperator(op);
+            }
+
+
+        }
+
+        public string Operand(Node<String> parent)
+        {
+            Node<String> operandNode = parent;
+
+
+            Token first = CurrentToken();
+            if (first.value == "(")
+            {
+                NextToken();
+                string type = expr(operandNode);
+                Token rightParenth = CurrentToken();
+                miniPLHelper.checkTokenThrowsMiniPLError(rightParenth, ")");
+                NextToken();
+                return type;
+            }
+            else
+            {
+
 
                 string value = first.value;
 
+                NextToken();
                 bool isNumeric = int.TryParse(value, out int numericValue);
                 if (isNumeric)
                 {
@@ -686,11 +549,11 @@ namespace MiniPLInterpreter.Implementations
                 }
                 else
                 {
-                    identifierCheck(first);
+
                     bool isIdentDefined = isIdentifierDefined(value);
                     if (!isIdentDefined)
                     {
-                        miniPLExceptionThrower.throwUndefinedVariableError(first.row, value);
+                        miniPLExceptionThrower.throwUndefinedVariableError(first.row, first.column, value);
                     }
                     ParserIdentifier p = this.identifiers.GetValueOrDefault(value);
 
@@ -705,24 +568,31 @@ namespace MiniPLInterpreter.Implementations
         {
             string value = t.value;
 
-            if (miniPLHelper.isReservedKeyword(value))
+            try
             {
-                miniPLExceptionThrower
-                    .throwMiniPLException($"Invalid identifier: invalid usage of keyword '{value}' as identifier at row {t.row}");
-            }
+                if (miniPLHelper.isReservedKeyword(value))
+                {
+                    miniPLExceptionThrower
+                        .throwMiniPLException($"Invalid identifier: invalid usage of keyword '{value}' as identifier at row {t.row}");
+                }
 
-            char firstChar = value[0];
-            if (!Char.IsLetter(firstChar))
-            {
-                miniPLExceptionThrower.throwMiniPLException($"Invalid identifier '{value}' at row {t.row}");
-            }
-
-            foreach (char c in value)
-            {
-                if (!Char.IsNumber(c) && !Char.IsLetter(c) && c != '_')
+                char firstChar = value[0];
+                if (!Char.IsLetter(firstChar))
                 {
                     miniPLExceptionThrower.throwMiniPLException($"Invalid identifier '{value}' at row {t.row}");
                 }
+
+                foreach (char c in value)
+                {
+                    if (!Char.IsNumber(c) && !Char.IsLetter(c) && c != '_')
+                    {
+                        miniPLExceptionThrower.throwMiniPLException($"Invalid identifier '{value}' at row {t.row}");
+                    }
+                }
+            }
+            catch (MiniPLException e)
+            {
+                errors.Add(e.Message);
             }
 
 

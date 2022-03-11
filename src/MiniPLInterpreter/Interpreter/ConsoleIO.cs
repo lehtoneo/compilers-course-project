@@ -1,7 +1,7 @@
 ﻿using System;
 using MiniPLInterpreter.Interfaces;
 
-namespace MiniPLInterpreter.Implementations
+namespace MiniPLInterpreter.Interpreter
 {
     public class ConsoleIO : IConsoleIO
     {

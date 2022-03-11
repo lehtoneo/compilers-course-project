@@ -32,34 +32,13 @@ namespace MiniPLInterpreter.Exceptions
             throw new MiniPLException(finalError);
         }
 
-        public void throwUnExpectedSymbolError(int row, char symbol)
-        {
-            string error = $"UnExpected symbol '{symbol}' at row {row}";
-            throwMiniPLException(error);
-        }
-
-
-
         public void throwUnExpectedValueError(int row, string value, string expected)
         {
-            string error = $"UnExpected value '{value}' at row {row} expected '{expected}'";
+            string error = $"SYNTAX ERROR: UnExpected value '{value}' at row {row} expected '{expected}'";
             throwMiniPLException(error);
         }
 
-        public void throwExpectedSomethingFoundNothingError(int row, string expected)
-        {
-            string finalError = "";
-            if (row == -1)
-            {
-                finalError = $"Expected {expected}, found nothing.";
-            }
-            else
-            {
-                finalError = $"Expected {expected} at row {row} found nothing.";
-            }
 
-            throwMiniPLException(finalError);
-        }
 
         public void throwInvalidError(int row, string invalid)
         {
@@ -67,9 +46,9 @@ namespace MiniPLInterpreter.Exceptions
             throwMiniPLException(error);
         }
 
-        public void throwUndefinedVariableError(int row, string variable)
+        public void throwUndefinedVariableError(int row, int col, string variable)
         {
-            string error = $"Undefined variable at row {row} : Variable '{variable}' is undefined";
+            string error = $"Undefined variable at row {row}, col {col}: Variable '{variable}' is undefined";
             throwMiniPLException(error);
         }
 

@@ -3,31 +3,43 @@ using MiniPLInterpreter.Interfaces;
 using MiniPLInterpreter.Exceptions;
 using System.Collections.Generic;
 using MiniPLInterpreter.Utils;
-namespace MiniPLInterpreter.Implementations
+using MiniPLInterpreter.Parser;
+using MiniPLInterpreter.Scanner;
+namespace MiniPLInterpreter.Interpreter
 {
-    public class Interpreter : IInterpreter
+    public class MPLInterpreter : IInterpreter
     {
         private IScanner Scanner;
         private IParser Parser;
         private Dictionary<string, Operand> identifiers;
-        private MiniPLHelper MiniPLHelper;
+
         private MiniPLExceptionThrower miniPLExceptionThrower = new MiniPLExceptionThrower("Runtime");
+        private MiniPLHelper MiniPLHelper = new MiniPLHelper(new MiniPLExceptionThrower("Runtime"));
         private IConsoleIO consoleIO = new ConsoleIO();
 
 
-        public Interpreter(IScanner scanner, IParser parser)
+        public MPLInterpreter()
         {
-            this.MiniPLHelper = new MiniPLHelper(miniPLExceptionThrower);
-            this.Scanner = scanner;
-            this.Parser = parser;
-        }
+            this.Scanner = new MiniPLScanner();
+            this.Parser = new MiniPLParser();
 
-        public Interpreter(IScanner scanner, IParser parser, IConsoleIO consoleIO) : this(scanner, parser)
+        }
+        public MPLInterpreter(IConsoleIO consoleIO) : this()
         {
             this.consoleIO = consoleIO;
         }
 
+        public MPLInterpreter(IScanner scanner, IParser parser)
+        {
+            this.Scanner = scanner;
+            this.Parser = parser;
+        }
 
+        public MPLInterpreter(IScanner scanner, IParser parser, IConsoleIO consoleIO) : this(consoleIO)
+        {
+            this.Scanner = scanner;
+            this.Parser = parser;
+        }
 
         public void printNode(Node<string> node)
         {
@@ -55,14 +67,26 @@ namespace MiniPLInterpreter.Implementations
 
                 if (scannerResult.Errors.Count > 0)
                 {
-                    Console.WriteLine("Syntax errors:");
+                    consoleIO.WriteLine("Scanner errors:");
                     scannerResult.Errors.ForEach(error =>
                     {
-                        Console.WriteLine(error);
+                        consoleIO.WriteLine(error);
                     });
                     return;
                 }
-                Node<String> ast = Parser.parse(scannerResult.Tokens);
+                ParserResult parserResult = Parser.parse(scannerResult.Tokens);
+
+                if (parserResult.Errors.Count > 0)
+                {
+                    consoleIO.WriteLine("Errors:");
+                    parserResult.Errors.ForEach(error =>
+                    {
+                        consoleIO.WriteLine(error);
+                    });
+                    return;
+                }
+
+                Node<String> ast = parserResult.AST;
                 consoleIO.WriteLine("AST:");
                 ast.PrintPretty("", true);
 
@@ -184,7 +208,7 @@ namespace MiniPLInterpreter.Implementations
                 while (true)
                 {
                     Node<string> statementNode = node.children[stmtI];
-                    if (statementNode.value == "$$")
+                    if (statementNode.value == "end")
                     {
                         break;
                     }
@@ -194,7 +218,7 @@ namespace MiniPLInterpreter.Implementations
                     }
                     stmtI++;
                 }
-                Node<string> statementsNode = node.children[3];
+
                 int firstExpressionValue = getExpressionValue(firstExpressionNode).valueToInt();
                 int secondExpressionValue = getExpressionValue(secondExpressionNode).valueToInt();
 
@@ -272,10 +296,12 @@ namespace MiniPLInterpreter.Implementations
                     }
                 }
             }
-            else
             {
-                string idOrType = value.Split('(')[0];
-                string operandValue = value.Split('(')[1].Split(')')[0];
+                string usedValue = value;
+
+
+                string idOrType = usedValue.Split('(')[0];
+                string operandValue = usedValue.Split('(')[1].Split(')')[0];
                 if (idOrType == "id")
                 {
                     return this.identifiers.GetValueOrDefault(operandValue);

@@ -1,0 +1,19 @@
+﻿var nTimes : int := 0;
+print "How many times?"; // wadap
+/* moi
+read nTimes;
+var x : int; */
+
+read nTimes;
+var x : int;
+var y : int;
+for x in 0..nTimes-1 do
+	print "x";
+	print " : Hello, World!\n";
+
+	for y in 0..nTimes-1 do
+		print "y";
+		print " : Hello, World!\n";
+	end for;
+end for;
+assert (!(x = nTimes));

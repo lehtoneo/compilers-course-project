@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using MiniPLInterpreter.Implementations;
-using MiniPLInterpreter.Interfaces;
+﻿using MiniPLInterpreter.Interfaces;
 
-namespace MiniPLInterpreter.Abstracts
+namespace MiniPLInterpreter.Scanner
 {
     public abstract class AScanner : IScanner
     {

@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace MiniPLInterpreter.Implementations
+namespace MiniPLInterpreter
 {
+
     public class Token
     {
         public string value { get; set; }
@@ -34,6 +35,11 @@ namespace MiniPLInterpreter.Implementations
         public Token(char value, int row, int column, string type) : this(value, row, column)
         {
             this.type = type;
+        }
+
+        public override string ToString()
+        {
+            return value;
         }
 
     }

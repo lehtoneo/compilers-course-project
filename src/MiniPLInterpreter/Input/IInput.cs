@@ -1,4 +1,4 @@
-﻿namespace MiniPLInterpreter.Interfaces
+﻿namespace MiniPLInterpreter.Input
 {
     public interface IInput
     {
