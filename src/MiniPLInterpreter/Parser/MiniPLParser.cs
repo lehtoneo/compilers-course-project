@@ -154,7 +154,16 @@ namespace MiniPLInterpreter.Parser
                 }
 
                 // handle errors in forloop, exit all forloops if they are nested
+                // and mark the control variable as not control variable
+                foreach (string key in identifiers.Keys)
+                {
+                    ParserIdentifier pi = identifiers.GetValueOrDefault(key, new ParserIdentifier("undefined", -1));
 
+                    if (pi.type != "undefined")
+                    {
+                        pi.isControlVariable = false;
+                    }
+                }
                 while (true)
                 {
                     Token currToken = CurrentToken();
@@ -166,6 +175,8 @@ namespace MiniPLInterpreter.Parser
 
                     if (currToken.value == "end")
                     {
+
+
                         if (forLoopIndex == 1)
                         {
                             forLoopIndex--;
@@ -179,6 +190,8 @@ namespace MiniPLInterpreter.Parser
 
                     NextToken();
                 }
+
+
             }
 
 
@@ -193,15 +206,15 @@ namespace MiniPLInterpreter.Parser
 
             NextToken();
 
-            Token identifierToken = CurrentToken();
-            bool isIdentDefined = isIdentifierDefined(identifierToken.value);
+            Token controlVariable = CurrentToken();
+            bool isIdentDefined = isIdentifierDefined(controlVariable.value);
 
             if (!isIdentDefined)
             {
                 try
                 {
                     miniPLExceptionThrower
-                    .throwUndefinedVariableError(identifierToken.row, identifierToken.column, identifierToken.value);
+                    .throwUndefinedVariableError(controlVariable.row, controlVariable.column, controlVariable.value);
                 }
                 catch (MiniPLException e)
                 {
@@ -209,14 +222,16 @@ namespace MiniPLInterpreter.Parser
                 }
             }
 
-            ParserIdentifier pI = this.identifiers.GetValueOrDefault(identifierToken.value, new ParserIdentifier("undefined", -1));
-            if (isIdentDefined && pI.type != "int")
+            ParserIdentifier controlVariablePI = this.identifiers.GetValueOrDefault(controlVariable.value, new ParserIdentifier("undefined", -1));
+
+
+            if (isIdentDefined && controlVariablePI.type != "int")
             {
                 miniPLExceptionThrower
-                    .throwMiniPLException($"Identifier error at row {identifierToken.row} col {identifierToken.column}: '{identifierToken.value}' has invalid type '{pI.type}', expected 'int'");
+                    .throwMiniPLException($"Identifier error at row {controlVariable.row} col {controlVariable.column}: '{controlVariable.value}' has invalid type '{controlVariablePI.type}', expected 'int'");
             }
 
-            loopNode.children.Add(new Node<string>(identifierToken.value));
+            loopNode.children.Add(new Node<string>(controlVariable.value));
 
             NextToken();
 
@@ -243,7 +258,9 @@ namespace MiniPLInterpreter.Parser
 
             NextToken();
 
+            controlVariablePI.isControlVariable = true;
             stmt_list(loopNode);
+            controlVariablePI.isControlVariable = false;
 
             Token shouldBeEndToken = CurrentToken();
             miniPLHelper.checkTokenThrowsMiniPLError(shouldBeEndToken, "end");
@@ -258,15 +275,18 @@ namespace MiniPLInterpreter.Parser
             NextToken();
             checkCurrentTokenIsRowsEndOfLine(shouldBeForToken.row);
             loopNode.children.Add(new Node<string>("for"));
-            foreach (string key in identifiers.Keys)
+            if (forLoopIndex > 0)
             {
-                ParserIdentifier pi = identifiers.GetValueOrDefault(key, new ParserIdentifier("undefined", -1));
-                if (pi.forLoopIndex == forLoopIndex)
+                foreach (string key in identifiers.Keys)
                 {
-                    identifiers.Remove(key);
+                    ParserIdentifier pi = identifiers.GetValueOrDefault(key, new ParserIdentifier("undefined", -1));
+                    if (pi.forLoopIndex == forLoopIndex)
+                    {
+                        identifiers.Remove(key);
+                    }
                 }
+                forLoopIndex--;
             }
-            forLoopIndex--;
         }
 
         public void identAssignment(Node<String> parent)
@@ -292,6 +312,8 @@ namespace MiniPLInterpreter.Parser
                 }
             }
 
+
+
             assignmentNode.children.Add(new Node<string>(identifier));
 
             Token assignmentToken = CurrentToken();
@@ -301,11 +323,18 @@ namespace MiniPLInterpreter.Parser
             NextToken();
             string type = expr(assignmentNode);
             ParserIdentifier pI = identifiers.GetValueOrDefault(identifier);
+            if (pI.isControlVariable)
+            {
+                miniPLExceptionThrower
+                    .throwMiniPLException($"Invalid assignment of control variable {identifier} at row {ident.row}: cannot assign control variables.");
+            }
             if (type != pI.type && isIdentDefined)
             {
                 miniPLExceptionThrower
                     .throwMiniPLException($"Invalid assignment at row {ident.row}: cannot convert type '{pI.type}' to type '{type}' ");
             }
+
+
             checkCurrentTokenIsRowsEndOfLine(assignmentToken.row);
 
 
