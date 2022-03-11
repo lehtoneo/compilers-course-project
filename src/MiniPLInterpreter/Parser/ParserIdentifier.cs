@@ -6,17 +6,15 @@ namespace MiniPLInterpreter.Parser
 {
     public class ParserIdentifier
     {
-        public int forLoopIndex { get; set; }
         public string type { get; set; }
 
         public bool isControlVariable { get; set; } = false;
-        public ParserIdentifier(string type, int forLoopIndex)
+        public ParserIdentifier(string type)
         {
             this.type = type;
-            this.forLoopIndex = forLoopIndex;
         }
 
-        public ParserIdentifier(string type, int forLoopIndex, bool isControlVariable) : this(type, forLoopIndex)
+        public ParserIdentifier(string type, bool isControlVariable) : this(type)
         {
             this.isControlVariable = isControlVariable;
         }

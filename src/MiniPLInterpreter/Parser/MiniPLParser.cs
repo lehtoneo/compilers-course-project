@@ -10,7 +10,8 @@ namespace MiniPLInterpreter.Parser
     public class MiniPLParser : IParser
     {
         public List<Token> Tokens;
-        public Dictionary<string, ParserIdentifier> identifiers = new Dictionary<string, ParserIdentifier>();
+
+        public Dictionary<int, Dictionary<string, ParserIdentifier>> symbolTable;
         public MiniPLExceptionThrower miniPLExceptionThrower;
         public MiniPLHelper miniPLHelper;
         private int forLoopIndex = 0;
@@ -56,7 +57,14 @@ namespace MiniPLInterpreter.Parser
 
         public ParserResult parse(List<Token> tokens)
         {
-            this.identifiers = new Dictionary<string, ParserIdentifier>();
+
+            Dictionary<string, ParserIdentifier> globalIdentifiers
+                = new Dictionary<string, ParserIdentifier>();
+            this.symbolTable =
+                new Dictionary<int, Dictionary<string, ParserIdentifier>> { };
+
+            symbolTable.Add(0, globalIdentifiers);
+
             this.forLoopIndex = 0;
             this.errors = new List<string>();
             this.Tokens = tokens;
@@ -155,14 +163,11 @@ namespace MiniPLInterpreter.Parser
 
                 // handle errors in forloop, exit all forloops if they are nested
                 // and mark the control variable as not control variable
-                foreach (string key in identifiers.Keys)
+                int i = forLoopIndex;
+                while (i > 0)
                 {
-                    ParserIdentifier pi = identifiers.GetValueOrDefault(key, new ParserIdentifier("undefined", -1));
-
-                    if (pi.type != "undefined")
-                    {
-                        pi.isControlVariable = false;
-                    }
+                    symbolTable.Remove(i);
+                    i--;
                 }
                 while (true)
                 {
@@ -200,7 +205,7 @@ namespace MiniPLInterpreter.Parser
         public void forLoop(Node<String> parent)
         {
             forLoopIndex++;
-
+            symbolTable.Add(forLoopIndex, new Dictionary<string, ParserIdentifier>());
             Node<String> loopNode = new Node<string>("forloop");
             parent.children.Add(loopNode);
 
@@ -222,7 +227,7 @@ namespace MiniPLInterpreter.Parser
                 }
             }
 
-            ParserIdentifier controlVariablePI = this.identifiers.GetValueOrDefault(controlVariable.value, new ParserIdentifier("undefined", -1));
+            ParserIdentifier controlVariablePI = GetParserIdentifier(controlVariable.value);
 
 
             if (isIdentDefined && controlVariablePI.type != "int")
@@ -277,68 +282,11 @@ namespace MiniPLInterpreter.Parser
             loopNode.children.Add(new Node<string>("for"));
             if (forLoopIndex > 0)
             {
-                foreach (string key in identifiers.Keys)
-                {
-                    ParserIdentifier pi = identifiers.GetValueOrDefault(key, new ParserIdentifier("undefined", -1));
-                    if (pi.forLoopIndex == forLoopIndex)
-                    {
-                        identifiers.Remove(key);
-                    }
-                }
-                forLoopIndex--;
+                symbolTable.Remove(forLoopIndex);
             }
         }
 
-        public void identAssignment(Node<String> parent)
-        {
-            Token ident = CurrentToken();
 
-            string identifier = ident.value;
-            NextToken();
-            Node<string> assignmentNode = new Node<string>("assignment");
-
-            parent.children.Add(assignmentNode);
-            bool isIdentDefined = isIdentifierDefined(identifier);
-
-            if (!isIdentDefined)
-            {
-                try
-                {
-                    miniPLExceptionThrower.throwUndefinedVariableError(ident.row, ident.column, identifier);
-                }
-                catch (MiniPLException e)
-                {
-                    errors.Add(e.Message);
-                }
-            }
-
-
-
-            assignmentNode.children.Add(new Node<string>(identifier));
-
-            Token assignmentToken = CurrentToken();
-
-            miniPLHelper.checkTokenThrowsMiniPLError(assignmentToken, ":=");
-
-            NextToken();
-            string type = expr(assignmentNode);
-            ParserIdentifier pI = identifiers.GetValueOrDefault(identifier);
-            if (pI.isControlVariable)
-            {
-                miniPLExceptionThrower
-                    .throwMiniPLException($"Invalid assignment of control variable {identifier} at row {ident.row}: cannot assign control variables.");
-            }
-            if (type != pI.type && isIdentDefined)
-            {
-                miniPLExceptionThrower
-                    .throwMiniPLException($"Invalid assignment at row {ident.row}: cannot convert type '{pI.type}' to type '{type}' ");
-            }
-
-
-            checkCurrentTokenIsRowsEndOfLine(assignmentToken.row);
-
-
-        }
         public void assert(Node<String> parent)
         {
 
@@ -382,11 +330,12 @@ namespace MiniPLInterpreter.Parser
 
             Token varIdent = CurrentToken();
 
-            ParserIdentifier pI = this.identifiers.GetValueOrDefault(varIdent.value, new ParserIdentifier("undefined", -1));
+            ParserIdentifier pI = GetParserIdentifier(varIdent.value);
+            bool isIdentDefined = isIdentifierDefined(varIdent.value);
 
             readNode.children.Add(new Node<string>(varIdent.value));
 
-            if (pI.type == "undefined")
+            if (!isIdentDefined)
             {
                 try
                 {
@@ -400,7 +349,9 @@ namespace MiniPLInterpreter.Parser
             }
 
             List<string> validReadTypes = new List<string> { "int", "string" };
-            if (pI.type != "undefined" && !validReadTypes.Contains(pI.type))
+
+
+            if (!validReadTypes.Contains(pI.type))
             {
                 miniPLExceptionThrower
                     .throwMiniPLException($"Invalid read at row {varIdent.row}. Cannot read variable of type '{pI.type}'");
@@ -430,28 +381,81 @@ namespace MiniPLInterpreter.Parser
             Token shouldBeType = CurrentToken();
             string type = this.validTypeCheck(shouldBeType);
 
-            if (this.identifiers.GetValueOrDefault(identToken.value, new ParserIdentifier("undefined", -1)).type != "undefined")
+            if (GetParserIdentifier(identToken.value).type != "undefined")
             {
                 miniPLExceptionThrower
                     .throwMiniPLException($"Duplicate variable assignment at row {identToken.row}");
             }
             else
             {
-                this.identifiers.Add(identToken.value, new ParserIdentifier(type, forLoopIndex));
+                AddToSymbolTable(identToken.value, type);
             }
 
             varAssignmentNode.children.Add(new Node<String>(type));
             NextToken();
-            if (CurrentToken().value == ";")
+            if (CurrentToken().value == ":=")
             {
-                return;
+                assignment(varAssignmentNode, type);
             }
 
+
+            checkCurrentTokenIsRowsEndOfLine(identToken.row);
+        }
+
+        public void assignment(Node<string> assignmentNode, string expectedType)
+        {
             Token assignmentToken = CurrentToken();
+
             miniPLHelper.checkTokenThrowsMiniPLError(assignmentToken, ":=");
+
             NextToken();
-            expr(varAssignmentNode);
-            checkCurrentTokenIsRowsEndOfLine(assignmentToken.row);
+            string type = expr(assignmentNode);
+
+            if (type != expectedType)
+            {
+                miniPLExceptionThrower
+                    .throwMiniPLException($"Invalid assignment at row {assignmentToken.row}: cannot convert type '{type}' to type '{expectedType}' ");
+            }
+        }
+
+        public void identAssignment(Node<String> parent)
+        {
+            Token ident = CurrentToken();
+
+            string identifier = ident.value;
+            NextToken();
+            Node<string> assignmentNode = new Node<string>("assignment");
+
+            parent.children.Add(assignmentNode);
+            bool isIdentDefined = isIdentifierDefined(identifier);
+
+            if (!isIdentDefined)
+            {
+                try
+                {
+                    miniPLExceptionThrower.throwUndefinedVariableError(ident.row, ident.column, identifier);
+                }
+                catch (MiniPLException e)
+                {
+                    errors.Add(e.Message);
+                }
+            }
+
+            ParserIdentifier pI = GetParserIdentifier(identifier);
+            if (pI.isControlVariable)
+            {
+                miniPLExceptionThrower
+                    .throwMiniPLException($"Invalid assignment of control variable {identifier} at row {ident.row}: cannot assign control variables.");
+            }
+
+            assignmentNode.children.Add(new Node<string>(identifier));
+
+            assignment(assignmentNode, pI.type);
+
+
+            checkCurrentTokenIsRowsEndOfLine(ident.row);
+
+
         }
 
         public string expr(Node<String> parent)
@@ -578,7 +582,7 @@ namespace MiniPLInterpreter.Parser
                     {
                         miniPLExceptionThrower.throwUndefinedVariableError(first.row, first.column, value);
                     }
-                    ParserIdentifier p = this.identifiers.GetValueOrDefault(value);
+                    ParserIdentifier p = GetParserIdentifier(value);
 
                     operandNode.children.Add(new Node<String>($"id({value})"));
                     return p.type;
@@ -650,9 +654,35 @@ namespace MiniPLInterpreter.Parser
 
         private bool isIdentifierDefined(string ident)
         {
-            ParserIdentifier p = this.identifiers.GetValueOrDefault(ident, new ParserIdentifier("undefined", -1));
+            ParserIdentifier p = GetParserIdentifier(ident);
 
             return p.type != "undefined";
+        }
+
+        private ParserIdentifier GetParserIdentifier(string identifier)
+        {
+            int i = forLoopIndex;
+            while (i >= 0)
+            {
+                Dictionary<string, ParserIdentifier> contextDictionary = symbolTable
+                    .GetValueOrDefault(i, new Dictionary<string, ParserIdentifier>());
+                ParserIdentifier parserIdentifier = contextDictionary.GetValueOrDefault(identifier, new ParserIdentifier("undefined"));
+
+                if (parserIdentifier.type != "undefined")
+                {
+                    return parserIdentifier;
+                }
+                i--;
+            }
+
+            return new ParserIdentifier("undefined");
+        }
+
+        private void AddToSymbolTable(string identifier, string type)
+        {
+            Dictionary<string, ParserIdentifier> contextDictionary = symbolTable
+                    .GetValueOrDefault(forLoopIndex, new Dictionary<string, ParserIdentifier>());
+            contextDictionary.Add(identifier, new ParserIdentifier(type));
         }
     }
 
